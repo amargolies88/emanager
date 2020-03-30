@@ -25,21 +25,37 @@ function startQuestions() {
             message: "Create new:",
             choices: ["Department", "Role", "Employee"]
         })
-        .then(answer => {
-            switch (answer) {
-                case "Department":  inqDepartment();    break;
-                case "Role":        inqRole();          break;
-                case "Employee":    inqEmployee();      break;
+        .then(({ tableSelect }) => {
+            console.log(tableSelect);
+            switch (tableSelect) {
+                case "Department": inqDepartment(); break;
+                case "Role": inqRole(); break;
+                case "Employee": inqEmployee(); break;
             }
         });
 }
 
 function inqDepartment() {
-    
+    inquirer
+        .prompt({
+            name: "depName",
+            type: "input",
+            message: "Enter name of department."
+        })
+        .then(({ depName }) => {
+            let query =
+                `INSERT INTO department (name)
+                    VALUES ("${depName}");`
+            connection.query(query, (err, res) => {
+                if (err) throw err;
+            });
+        });
 }
+
 function inqRole() {
 
 }
+
 function inqEmployee() {
 
 }
