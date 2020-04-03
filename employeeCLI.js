@@ -24,11 +24,12 @@ function inqCreateOrView() {
             name: "createNew",
             type: "list",
             message: "What would you like to do?",
-            choices: ["Create", "View"]
+            choices: ["Create", "View", "Exit"]
         })
         .then(({ createNew }) => {
             if (createNew === "Create") { inqCreateSelect() }
             else if (createNew === "View") { inqViewSelect() }
+            else if (createNew === "Exit") { closeEmanager() }
         });
 }
 
@@ -56,24 +57,25 @@ function inqViewSelect() {
             name: "viewSelect",
             type: "list",
             message: "What would you like to view?",
-            choices: ["Departments", "Roles", "Employees"]
+            choices: ["Departments", "Roles", "Employees"],
+            filter: value => value.toLowerCase().slice(0, -1) // Drop last letter and make lowercase. ie: Roles becomes role
         })
         .then(({ viewSelect }) => {
-            inqView(viewSelect.toLowerCase().slice(0, -1));
+            inqView(viewSelect);
         });
 }
 
 function inqView(option) {
-    console.log(option);
     inquirer
         .prompt({
             name: "viewSelect",
             type: "list",
             message: "What would you like to do?",
-            choices: [`View all ${option}s`, `Select ${option} to view`, `Search specific ${option}s to view`]
+            choices: [`View all ${option}s`, `Select ${option} to view`, `Search specific ${option}s to view`],
+            filter: value => value.slice(0, 3)
         })
         .then(({ viewSelect }) => {
-            switch (viewSelect.slice(0, 3)) {
+            switch (viewSelect) {
                 case "Vie": viewAll(option); break;
                 case "Sel": viewList(option); break;
                 case "Sea": viewSearch(option); break;
@@ -82,11 +84,30 @@ function inqView(option) {
 }
 
 function viewAll(option) {
-    let query = `SELECT * FROM ${option}`
+    let query = `SELECT * FROM ${option}`;
     connection.query(query, (err, res) => {
         if (err) throw err;
         console.table(res);
         inqCreateOrView();
+    });
+}
+
+function viewList(option) {
+    let optionList = [];
+    let query = `SELECT * FROM ${option}`;
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt({
+                name: "listSelect",
+                type: "list",
+                message: `Select ${option} to view`,
+                choices: res
+            })
+            .then(({ listSelect }) => {
+                console.log("hello");
+                console.log(listSelect);
+            });
     });
 }
 
@@ -98,23 +119,29 @@ function inqCreateDepartment() {
         res.forEach(row => {
             departmentNames.push(row.name);
         });
-    });
-    inquirer
-        .prompt({
-            name: "depName",
-            type: "input",
-            message: "Enter name of department.",
-            validate: value => (value !== "") ? true : "Department input must not be empty"
-        })
-        .then(({ depName }) => {
-            let query =
-                `INSERT INTO department (name)
+        inquirer
+            .prompt({
+                name: "depName",
+                type: "input",
+                message: "Enter name of department.",
+                validate: value => {
+                    if (value === "") return "Department input must not be empty";
+                    for (let i = 0; i < departmentNames.length; i++) {
+                        if (value === departmentNames[i]) return "Department already exists";
+                    }
+                    return true;
+                }
+            })
+            .then(({ depName }) => {
+                let query =
+                    `INSERT INTO department (name)
                     VALUES ("${depName}");`
-            connection.query(query, (err, res) => {
-                if (err) throw err;
-                inqCreateOrView();
+                connection.query(query, (err, res) => {
+                    if (err) throw err;
+                    inqCreateOrView();
+                });
             });
-        });
+    });
 }
 
 function inqCreateRole() {
@@ -133,6 +160,7 @@ function inqCreateRole() {
                 type: "input",
                 message: "Enter role name",
                 validate: value => {
+                    if (value === "") return "Role must not be empty";
                     for (let i = 0; i < roleNames.length; i++) {
                         if (value === roleNames[i]) return "Role already exists";
                     }
@@ -140,11 +168,30 @@ function inqCreateRole() {
                 }
             }
         ])
-        .then(() => {
+        .then((thang) => {
+            console.log(thang);
+            // let query =              
+            // `INSERT INTO role (name, salary, department_id)
+            // VALUES ("${depName}");`;
+            // connection.query(query, (err, res) => {
 
+            // });
         });
 }
 
 function inqCreateEmployee() {
 
+}
+
+function closeEmanager() {
+    console.log("Thank you for using Emanager. Bye!");
+    process.exit();
+}
+
+function viewSpecific(id, table) {
+    query = `SELECT * FROM ${table} WHERE id = ${id}`;
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        console.table(res);
+    })
 }
