@@ -105,11 +105,17 @@ function viewList(option) {
                 choices: res
             })
             .then(({ listSelect }) => {
-                console.log("hello");
-                console.log(listSelect);
+                let query9000 = `SELECT * FROM department WHERE name = "${listSelect}"`;
+                connection.query(query9000, (err, res) => {
+                    if (err) throw err;
+                    console.table(res);
+                    inqCreateOrView();
+                })
+
             });
     });
 }
+
 
 function inqCreateDepartment() {
     let departmentNames = [];
