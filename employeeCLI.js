@@ -1,7 +1,5 @@
 import Database from "./querydb.js";
 
-
-
 // Node Package Constants
 const mysql = require("mysql");
 const inquirer = require("inquirer");
@@ -140,7 +138,7 @@ function viewList(option) {
 function inqCreateDepartment() {
     let departmentNames = [];
     let departmentQuery = `SELECT * FROM department`;
-    connection.query(departmentQuery, (err, res) => {
+    dbquery.query(departmentQuery, (err, res) => {
         if (err) throw err;
         res.forEach(row => {
             departmentNames.push(row.name);

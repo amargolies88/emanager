@@ -1,0 +1,2 @@
+swone = require("./test");
+swone();
