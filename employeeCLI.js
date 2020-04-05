@@ -1,10 +1,22 @@
+import Database from "./querydb.js";
+
+
+
 // Node Package Constants
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
 // MySQL Connection
-const connection = mysql.createConnection({
+// const connection = mysql.createConnection({
+//     host: "localhost",
+//     port: 3306,
+//     user: "root",
+//     password: "root",
+//     database: "employeeDB"
+// });
+
+let dbquery = new Database({
     host: "localhost",
     port: 3306,
     user: "root",
@@ -81,6 +93,14 @@ function inqView(option) {
                 case "Sea": viewSearch(option); break;
             }
         });
+}
+
+function getAllFrom(table, _callback) {
+    let query = `SELECT * FROM ${table}`;
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+
+    })
 }
 
 function viewAll(option) {
@@ -219,7 +239,42 @@ function inqCreateRole() {
 }
 
 function inqCreateEmployee() {
+    inquirer
+        .prompt([
+            {
+                name: "employeeFirstName",
+                type: "input",
+                message: "Enter employee's first name",
+                validate: value => {
+                    if (value === "") return "Name must not be empty";
+                    else if (value !== /^[A-Za-z]+$/) return "Input alphabet characters only";
+                    else return true;
+                }
+            },
+            {
+                name: "employeeLastName",
+                type: "input",
+                message: "Enter employee's last name",
+                validate: value => {
+                    if (value === "") return "Name must not be empty";
+                    else if (value !== /^[A-Za-z]+$/) return "Input alphabet characters only";
+                    else return true;
+                }
+            },
+            {
+                name: "employeeRole",
+                type: "list",
+                message: "Select employee's role",
+                validate: value => {
 
+                }
+            }
+        ])
+        .then(({ answers }) => {
+            let query =
+                `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+            VALUES ();`;
+        });
 }
 
 function closeEmanager() {
@@ -229,8 +284,10 @@ function closeEmanager() {
 
 function viewSpecific(id, table) {
     query = `SELECT * FROM ${table} WHERE id = ${id}`;
-    connection.query(query, (err, res) => {
+
+    let somethang = connection.query(query, (err, res) => {
         if (err) throw err;
-        console.table(res);
+        return res;
     })
+    return somethang;
 }
