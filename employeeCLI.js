@@ -146,37 +146,70 @@ function inqCreateDepartment() {
 
 function inqCreateRole() {
     let roleNames = [];
+    let departmentNames = [];
+    let roleDepartment;
     let roleQuery = `SELECT * FROM role`;
+    let departmentQuery = `SELECT * FROM department`;
     connection.query(roleQuery, (err, res) => {
         if (err) throw err;
         res.forEach(row => {
             roleNames.push(row.name);
         });
-    });
-    inquirer
-        .prompt([
-            {
-                name: "roleName",
-                type: "input",
-                message: "Enter role name",
-                validate: value => {
-                    if (value === "") return "Role must not be empty";
-                    for (let i = 0; i < roleNames.length; i++) {
-                        if (value === roleNames[i]) return "Role already exists";
+        connection.query(departmentQuery, (err, res) => {
+            if (err) throw err;
+            res.forEach(row => {
+                departmentNames.push(row.name);
+            });
+            console.log(roleNames);
+            console.log(departmentNames);
+            inquirer
+                .prompt([
+                    {
+                        name: "roleName",
+                        type: "input",
+                        message: "Enter role name",
+                        validate: value => {
+                            if (value === "") return "Role must not be empty";
+                            for (let i = 0; i < roleNames.length; i++) {
+                                if (value === roleNames[i]) return "Role already exists";
+                            }
+                            return true;
+                        }
+                    },
+                    {
+                        name: "answerSalary",
+                        type: "input",
+                        message: "Enter role salary (Do not use symbols, enter numbers only)",
+                        validate: value => {
+                            return (value == parseFloat(value)) ? true : "Enter numbers only.";
+                        }
+                    },
+                    {
+                        name: "answerDepartment",
+                        type: "list",
+                        message: "Select department for this role",
+                        choices: departmentNames
                     }
-                    return true;
-                }
-            }
-        ])
-        .then((thang) => {
-            console.log(thang);
-            // let query =              
-            // `INSERT INTO role (name, salary, department_id)
-            // VALUES ("${depName}");`;
-            // connection.query(query, (err, res) => {
+                ])
+                .then((role) => {
+                    console.log(role);
+                    let idQuery = `SELECT * FROM department WHERE name = "${role.answerDepartment}"`;
+                    connection.query(idQuery, (err, res) => {
+                        if (err) throw err;
+                        console.log(res[0].id);
+                        let departmentID = res[0].id;
+                        let query =
+                            `INSERT INTO role (name, salary, department_id)
+                        VALUES ("${role.roleName}", ${parseFloat(role.answerSalary)}, "${departmentID}");`;
+                        connection.query(query, (err, res) => {
+                            if (err) throw err;
+                            inqCreateOrView();
+                        });
+                    });
 
-            // });
+                });
         });
+    });
 }
 
 function inqCreateEmployee() {
