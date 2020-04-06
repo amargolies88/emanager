@@ -1,22 +1,10 @@
-import Database from "./querydb.js";
-
-
-
 // Node Package Constants
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
 // MySQL Connection
-// const connection = mysql.createConnection({
-//     host: "localhost",
-//     port: 3306,
-//     user: "root",
-//     password: "root",
-//     database: "employeeDB"
-// });
-
-let dbquery = new Database({
+const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
     user: "root",
