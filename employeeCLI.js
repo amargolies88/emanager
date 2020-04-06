@@ -18,18 +18,21 @@ connection.connect(err => {
     inqCreateOrView();
 });
 
-function inqCreateOrView() {
+function inqCreateOrView(option) {
+    let choices = ["Create", "View", "Exit"];
+    if (option) choices = ["Back", "Create", "View", "Exit"];
     inquirer
         .prompt({
             name: "createNew",
             type: "list",
             message: "What would you like to do?",
-            choices: ["Create", "View", "Exit"]
+            choices: choices
         })
         .then(({ createNew }) => {
             if (createNew === "Create") { inqCreateSelect() }
             else if (createNew === "View") { inqViewSelect() }
             else if (createNew === "Exit") { closeEmanager() }
+            else if (createNew === "Back") { inqView(option) }
         });
 }
 
@@ -39,15 +42,40 @@ function inqCreateSelect(again) {
             name: "tableSelect",
             type: "list",
             message: "Create new... (choose one)",
-            choices: ["Department", "Role", "Employee"]
+            choices: ["Back", "Department", "Role", "Employee", "Exit"]
         })
         .then(({ tableSelect }) => {
-            console.log(tableSelect);
-            switch (tableSelect) {
-                case "Department": inqCreateDepartment(); break;
-                case "Role": inqCreateRole(); break;
-                case "Employee": inqCreateEmployee(); break;
-            }
+            connection.query("SELECT * FROM role", (err, res) => {
+                if (err) throw err;
+                console.log(res);
+                console.log(tableSelect);
+                switch (tableSelect) {
+                    case "Department": inqCreateDepartment(); break;
+                    case "Role":
+                        if (res.length !== 0) {
+                            inqCreateRole();
+                        } else {
+                            createDepartmentForRole("You must create a department before creating roles. Would you like to create a department?");
+                        }
+                        break;
+
+                    case "Employee": inqCreateEmployee(); break;
+                    case "Back": inqCreateOrView(); break;
+                    case "Exit": closeEmanager();
+                }
+            })
+        });
+}
+
+function createDepartmentForRole(message) {
+    inquirer
+        .prompt({
+            name: "createDepartmentQuestion",
+            type: "confirm",
+            message: message
+        })
+        .then(({ createDepartmentQuestion }) => {
+            (createDepartmentQuestion) ? inqCreateDepartment(1) : inqCreateOrView();
         });
 }
 
@@ -57,11 +85,14 @@ function inqViewSelect() {
             name: "viewSelect",
             type: "list",
             message: "What would you like to view?",
-            choices: ["Departments", "Roles", "Employees"],
+            choices: ["Back", "Departments", "Roles", "Employees", "Exit"],
             filter: value => value.toLowerCase().slice(0, -1) // Drop last letter and make lowercase. ie: Roles becomes role
         })
         .then(({ viewSelect }) => {
-            inqView(viewSelect);
+            console.log(viewSelect);
+            if (viewSelect === "bac") inqCreateOrView();
+            else if (viewSelect === "exi") closeEmanager();
+            else inqView(viewSelect);
         });
 }
 
@@ -71,14 +102,16 @@ function inqView(option) {
             name: "viewSelect",
             type: "list",
             message: "What would you like to do?",
-            choices: [`View all ${option}s`, `Select ${option} to view`, `Search specific ${option}s to view`],
+            choices: ["Back", `View all ${option}s`, `Select ${option} to view`, `Search specific ${option}s to view`, "Exit"],
             filter: value => value.slice(0, 3)
         })
         .then(({ viewSelect }) => {
             switch (viewSelect) {
+                case "Bac": inqViewSelect(); break;
                 case "Vie": viewAll(option); break;
                 case "Sel": viewList(option); break;
                 case "Sea": viewSearch(option); break;
+                case "Exi": closeEmanager();
             }
         });
 }
@@ -96,7 +129,7 @@ function viewAll(option) {
     connection.query(query, (err, res) => {
         if (err) throw err;
         console.table(res);
-        inqCreateOrView();
+        inqCreateOrView(option);
     });
 }
 
@@ -125,7 +158,7 @@ function viewList(option) {
 }
 
 
-function inqCreateDepartment() {
+function inqCreateDepartment(cameFrom = 0) {
     let departmentNames = [];
     let departmentQuery = `SELECT * FROM department`;
     connection.query(departmentQuery, (err, res) => {
@@ -137,7 +170,7 @@ function inqCreateDepartment() {
             .prompt({
                 name: "depName",
                 type: "input",
-                message: "Enter name of department.",
+                message: "Enter name of department",
                 validate: value => {
                     if (value === "") return "Department input must not be empty";
                     for (let i = 0; i < departmentNames.length; i++) {
@@ -152,18 +185,21 @@ function inqCreateDepartment() {
                     VALUES ("${depName}");`
                 connection.query(query, (err, res) => {
                     if (err) throw err;
-                    inqCreateOrView();
+                    if (cameFrom === 0) inqCreateOrView();
+                    else if (cameFrom === 1) inqCreateRole(1, depName);
+                    else inqCreateRole(cameFrom, depName);
                 });
             });
     });
 }
 
-function inqCreateRole() {
+function inqCreateRole(alreadyRole = 0, alreadyDepartment) {
     let roleNames = [];
-    let departmentNames = [];
+    let departmentNames = ["Create new department"];
     let roleDepartment;
     let roleQuery = `SELECT * FROM role`;
     let departmentQuery = `SELECT * FROM department`;
+    let questions = [];
     connection.query(roleQuery, (err, res) => {
         if (err) throw err;
         res.forEach(row => {
@@ -174,69 +210,83 @@ function inqCreateRole() {
             res.forEach(row => {
                 departmentNames.push(row.name);
             });
-            console.log(roleNames);
-            console.log(departmentNames);
-            inquirer
-                .prompt([
-                    {
-                        name: "roleName",
-                        type: "input",
-                        message: "Enter role name",
-                        validate: value => {
-                            if (value === "") return "Role must not be empty";
-                            for (let i = 0; i < roleNames.length; i++) {
-                                if (value === roleNames[i]) return "Role already exists";
-                            }
-                            return true;
+            questions = [
+                {
+                    name: "roleName",
+                    type: "input",
+                    message: "Enter role name",
+                    validate: value => {
+                        if (value === "") return "Role must not be empty";
+                        for (let i = 0; i < roleNames.length; i++) {
+                            if (value === roleNames[i]) return "Role already exists";
                         }
-                    },
-                    {
-                        name: "answerSalary",
-                        type: "input",
-                        message: "Enter role salary (Do not use symbols, enter numbers only)",
-                        validate: value => {
-                            return (value == parseFloat(value)) ? true : "Enter numbers only.";
-                        }
-                    },
-                    {
-                        name: "answerDepartment",
-                        type: "list",
-                        message: "Select department for this role",
-                        choices: departmentNames
+                        return true;
                     }
-                ])
+                },
+                {
+                    name: "answerSalary",
+                    type: "input",
+                    message: "Enter role salary (Do not use symbols, enter numbers only)",
+                    validate: value => {
+                        return (value == parseFloat(value)) ? true : "Enter numbers only.";
+                    }
+                },
+                {
+                    name: "answerDepartment",
+                    type: "list",
+                    message: "Select department for this role",
+                    choices: departmentNames
+                }
+            ]
+            if (alreadyRole !== 0) {
+                if (alreadyRole !== 1) questions.shift();
+                questions.pop();
+            }
+            inquirer
+                .prompt(questions)
                 .then((role) => {
+                    if (alreadyRole !== 0) {
+                        role.roleName = alreadyRole;
+                        role.answerDepartment = alreadyDepartment;
+                    }
                     console.log(role);
-                    let idQuery = `SELECT * FROM department WHERE name = "${role.answerDepartment}"`;
-                    connection.query(idQuery, (err, res) => {
-                        if (err) throw err;
-                        console.log(res[0].id);
-                        let departmentID = res[0].id;
-                        let query =
-                            `INSERT INTO role (name, salary, department_id)
-                        VALUES ("${role.roleName}", ${parseFloat(role.answerSalary)}, "${departmentID}");`;
-                        connection.query(query, (err, res) => {
+                    if (role.answerDepartment === "Create new department") {
+                        inqCreateDepartment(role.roleName);
+                    } else {
+                        let idQuery = `SELECT * FROM department WHERE name = "${role.answerDepartment}"`;
+                        connection.query(idQuery, (err, res) => {
                             if (err) throw err;
-                            inqCreateOrView();
+                            console.log(res[0].id);
+                            let departmentID = res[0].id;
+                            let query =
+                                `INSERT INTO role (name, salary, department_id)
+                            VALUES ("${role.roleName}", ${parseFloat(role.answerSalary)}, "${departmentID}");`;
+                            connection.query(query, (err, res) => {
+                                if (err) throw err;
+                                inqCreateOrView();
+                            });
                         });
-                    });
 
+                    }
                 });
         });
     });
 }
 
 function inqCreateEmployee() {
-    inquirer
-        .prompt([
+    let roleQuery = `SELECT * FROM role`;
+    let roles;
+    connection.query(roleQuery, (err, res) => {
+        if (err) throw err;
+        roles = res;
+        let choices = [
             {
                 name: "employeeFirstName",
                 type: "input",
                 message: "Enter employee's first name",
                 validate: value => {
                     if (value === "") return "Name must not be empty";
-                    else if (value !== /^[A-Za-z]+$/) return "Input alphabet characters only";
-                    else return true;
+                    else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
                 }
             },
             {
@@ -245,24 +295,34 @@ function inqCreateEmployee() {
                 message: "Enter employee's last name",
                 validate: value => {
                     if (value === "") return "Name must not be empty";
-                    else if (value !== /^[A-Za-z]+$/) return "Input alphabet characters only";
-                    else return true;
+                    else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
                 }
-            },
-            {
+            }
+        ]
+        if (roles.length !== 0) {
+            choices.push({
                 name: "employeeRole",
                 type: "list",
                 message: "Select employee's role",
-                validate: value => {
+                choices: roles
+            });
+        } else {
+            choices.push({
+                name: "employeeRole",
+                type: "input",
+                message: "Enter employee role",
+                validate: value => (value === "") ? "Name must not be empty" : true
+            });
+        }
+        inquirer
+            .prompt(choices)
+            .then(answers => {
+                let query = `INSERT INTO employee (first_name, last_name${(answers.employeeRole) ? ", role_id" : ""}${(answers.employee)}, manager_id) 
+                    VALUES (${answers.employeeFirstName}, ${answers.employeeLastName} ${(answers.employeeRole) ? `,${answers.employeeRole}` : ""} ${(answers.employeeDepartment) ? `,${answers.employeeDepartment}` : ""});`;
+                console.log(query);
+            });
 
-                }
-            }
-        ])
-        .then(({ answers }) => {
-            let query =
-                `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-            VALUES ();`;
-        });
+    });
 }
 
 function closeEmanager() {
