@@ -47,22 +47,29 @@ function inqCreateSelect(again) {
         .then(({ tableSelect }) => {
             connection.query("SELECT * FROM role", (err, res) => {
                 if (err) throw err;
-                console.log(res);
-                console.log(tableSelect);
-                switch (tableSelect) {
-                    case "Department": inqCreateDepartment(); break;
-                    case "Role":
-                        if (res.length !== 0) {
-                            inqCreateRole();
-                        } else {
-                            createDepartmentForRole("You must create a department before creating roles. Would you like to create a department?");
-                        }
-                        break;
-
-                    case "Employee": inqCreateEmployee(); break;
-                    case "Back": inqCreateOrView(); break;
-                    case "Exit": closeEmanager();
-                }
+                let roles = res;
+                connection.query("SELECT * FROM employee", (err, res) => {
+                    let employees = res;
+                    switch (tableSelect) {
+                        case "Department": inqCreateDepartment(); break;
+                        case "Role":
+                            if (roles.length !== 0) {
+                                inqCreateRole();
+                            } else {
+                                createDepartmentForRole("You must create a department before creating roles. Would you like to create a department?");
+                            }
+                            break;
+                        case "Employee":
+                            if (employees.length !== 0) {
+                                inqCreateEmployee();
+                            } else {
+                                
+                            }
+                            break;
+                        case "Back": inqCreateOrView(); break;
+                        case "Exit": closeEmanager();
+                    }
+                });
             })
         });
 }
@@ -89,7 +96,6 @@ function inqViewSelect() {
             filter: value => value.toLowerCase().slice(0, -1) // Drop last letter and make lowercase. ie: Roles becomes role
         })
         .then(({ viewSelect }) => {
-            console.log(viewSelect);
             if (viewSelect === "bac") inqCreateOrView();
             else if (viewSelect === "exi") closeEmanager();
             else inqView(viewSelect);
@@ -249,14 +255,12 @@ function inqCreateRole(alreadyRole = 0, alreadyDepartment) {
                         role.roleName = alreadyRole;
                         role.answerDepartment = alreadyDepartment;
                     }
-                    console.log(role);
                     if (role.answerDepartment === "Create new department") {
                         inqCreateDepartment(role.roleName);
                     } else {
                         let idQuery = `SELECT * FROM department WHERE name = "${role.answerDepartment}"`;
                         connection.query(idQuery, (err, res) => {
                             if (err) throw err;
-                            console.log(res[0].id);
                             let departmentID = res[0].id;
                             let query =
                                 `INSERT INTO role (name, salary, department_id)
@@ -275,53 +279,81 @@ function inqCreateRole(alreadyRole = 0, alreadyDepartment) {
 
 function inqCreateEmployee() {
     let roleQuery = `SELECT * FROM role`;
-    let roles;
+    let employeeQuery = `SELECT * FROM employee`;
+    let roles = [];
+    let employees = [];
+    let employeeIds = [];
     connection.query(roleQuery, (err, res) => {
         if (err) throw err;
-        roles = res;
-        let choices = [
-            {
-                name: "employeeFirstName",
-                type: "input",
-                message: "Enter employee's first name",
-                validate: value => {
-                    if (value === "") return "Name must not be empty";
-                    else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
+        res.forEach(e => {
+            roles.push({
+                name: e.name,
+                value: e.id
+            });
+        });
+        connection.query(employeeQuery, (err, res) => {
+            res.forEach(e => {
+                employees.push({
+                    name: `${e.first_name} ${e.last_name} ID: ${e.id}`,
+                    value: e.id
+                });
+            });
+            employees.unshift("No Manager");
+            let choices = [
+                {
+                    name: "employeeFirstName",
+                    type: "input",
+                    message: "Enter employee's FIRST name",
+                    validate: value => {
+                        if (value === "") return "Name must not be empty";
+                        else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
+                    }
+                },
+                {
+                    name: "employeeLastName",
+                    type: "input",
+                    message: "Enter employee's LAST name",
+                    validate: value => {
+                        if (value === "") return "Name must not be empty";
+                        else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
+                    }
                 }
-            },
-            {
-                name: "employeeLastName",
-                type: "input",
-                message: "Enter employee's last name",
-                validate: value => {
-                    if (value === "") return "Name must not be empty";
-                    else return (/^[a-zA-Z]*$/.test(value)) ? true : "Input alphabet characters only"
-                }
+            ]
+            if (roles.length !== 0) {
+                choices.push({
+                    name: "employeeRole",
+                    type: "list",
+                    message: "Select employee's role",
+                    choices: roles
+                });
+            } else {
+                choices.push({
+                    name: "employeeRole",
+                    type: "input",
+                    message: "Enter employee role",
+                    validate: value => (value === "") ? "Name must not be empty" : true
+                });
             }
-        ]
-        if (roles.length !== 0) {
-            choices.push({
-                name: "employeeRole",
-                type: "list",
-                message: "Select employee's role",
-                choices: roles
-            });
-        } else {
-            choices.push({
-                name: "employeeRole",
-                type: "input",
-                message: "Enter employee role",
-                validate: value => (value === "") ? "Name must not be empty" : true
-            });
-        }
-        inquirer
-            .prompt(choices)
-            .then(answers => {
-                let query = `INSERT INTO employee (first_name, last_name${(answers.employeeRole) ? ", role_id" : ""}${(answers.employee)}, manager_id) 
-                    VALUES (${answers.employeeFirstName}, ${answers.employeeLastName} ${(answers.employeeRole) ? `,${answers.employeeRole}` : ""} ${(answers.employeeDepartment) ? `,${answers.employeeDepartment}` : ""});`;
-                console.log(query);
-            });
-
+            if (employees.length !== 0) {
+                choices.push({
+                    name: "employeeManager",
+                    type: "list",
+                    message: "Select manager of employee if applicable",
+                    choices: employees
+                });
+            }
+            inquirer
+                .prompt(choices)
+                .then(answers => {
+                    let query = `INSERT INTO employee (first_name, last_name${(answers.employeeRole) ? ", role_id" : ""}${(answers.employeeManager === "No Manager") ? "" : ", manager_id"}) 
+                        VALUES ("${answers.employeeFirstName}", "${answers.employeeLastName}"${(answers.employeeRole) ? `, "${answers.employeeRole}"` : ""}${(answers.employeeManager !== "No Manager") ? `, ${answers.employeeManager}` : ""});`;
+                    console.log(query);
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        else console.log("Employee Created"); inqCreateOrView();
+                    });
+                });
+        });
     });
 }
 
