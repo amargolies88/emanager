@@ -30,19 +30,45 @@ alan = new employee("Alan", "Margolies", 1, 1);
 let someThang;
 
 
-home();
-console.log("hello");
+homeMenu();
+// console.log("hello");
 
 
 function test() { console.log("test") }
 
-function home() {
+function homeMenu() {
+    inquirer
+        .prompt({
+            name: "homeAnswer",
+            type: "list",
+            message: "Welcome to eManager. Choose an option to get started.",
+            choices: ["Create", "Edit", "Exit"]
+        })
+        .then(answer => {
+            switch (answer) {
+                case "Create": createMenu(); break;
+                case "Edit": editMenu(); break;
+                case "Exit": exit(); break;
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function createMenu() {
     connection.tableHasData()
         .then(({ departmentsHasData, rolesHasData, employeesHasData }) => {
             inquirer
                 .prompt({
-                    
+                    name: "menu",
+                    type: "list",
+                    choices: [{ name: "Create" }, { name: "Edit", disabled: true }]
                 })
+                .then(answers => { console.log(answers) })
+                .catch(err => { if (err) throw err });
         })
         .catch(err => console.log(err));
+}
+
+function exit() {
+    connection.close();
 }
