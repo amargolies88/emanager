@@ -27,22 +27,22 @@ const connection = new Database({
 })
 
 alan = new employee("Alan", "Margolies", 1, 1);
+let someThang;
 
-//Connect to MySQL and execute first inquirer function
-connection.insertEmployee(alan)
-    .then(() => {
-        console.log("lol");
-        return "horse";
-    })
-    .then((thang) => {
-        console.log(thang);
-        return "horse2";
-    })
-    .then(otherThang => {
-        console.log(otherThang);
-    })
-    .catch(err => {
-        if (err) throw err;
-    });
-connection.close();
-console.log("shush");
+
+home();
+console.log("hello");
+
+
+function test() { console.log("test") }
+
+function home() {
+    connection.tableHasData()
+        .then(({ departmentsHasData, rolesHasData, employeesHasData }) => {
+            inquirer
+                .prompt({
+                    
+                })
+        })
+        .catch(err => console.log(err));
+}

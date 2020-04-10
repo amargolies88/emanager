@@ -77,6 +77,29 @@ class Database {
         });
     }
 
+    tableHasData() {
+        let departments = [];
+        let roles = [];
+        let employees = [];
+        return new Promise((resolve, reject) => {
+            this.getAll("department")
+                .then(rows => { departments = rows })
+                .then(() => this.getAll("role"))
+                .then(rows => roles = rows)
+                .then(() => this.getAll("employee"))
+                .then(rows => employees = rows)
+                .then(() => {
+                    resolve({
+                        departments: (departments.length !== 0),
+                        roles: (roles.length !== 0),
+                        employees: (employees.length !== 0)
+                    })
+                })
+                .catch(err => { if (err) return reject(err) })
+        })
+    }
+
+
     close() {
         return new Promise((resolve, reject) => {
             this.connection.end(err => {
