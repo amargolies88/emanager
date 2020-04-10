@@ -70,5 +70,5 @@ function createMenu() {
 }
 
 function exit() {
-    connection.close();
+    process.exit();
 }
