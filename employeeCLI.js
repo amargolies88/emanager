@@ -44,11 +44,11 @@ function homeMenu() {
             message: "Welcome to eManager. Choose an option to get started.",
             choices: ["Create", "Edit", "Exit"]
         })
-        .then(answer => {
-            switch (answer) {
+        .then(({ homeAnswer }) => {
+            switch (homeAnswer) {
                 case "Create": createMenu(); break;
                 case "Edit": editMenu(); break;
-                case "Exit": exit(); break;
+                case "Exit": console.log("Thank you for using eManager. Bye!"); connection.close(); break;
             }
         })
         .catch(err => { if (err) throw err });
@@ -59,16 +59,27 @@ function createMenu() {
         .then(({ departmentsHasData, rolesHasData, employeesHasData }) => {
             inquirer
                 .prompt({
-                    name: "menu",
+                    name: "createAnswer",
                     type: "list",
-                    choices: [{ name: "Create" }, { name: "Edit", disabled: true }]
+                    message: "Create...",
+                    choices: [
+                        { name: "Department" },
+                        { name: "Role", disabled: (departmentsHasData) ? false : "Disabled: Must have created at least one department" },
+                        { name: "Employee", disabled: (rolesHasData) ? false : "Disabled: Must have created at least one role" }
+                    ]
                 })
-                .then(answers => { console.log(answers) })
+                .then(({ createAnswer }) => {
+                    switch (createAnswer) {
+                        case "Department": createDepartment(); break;
+                        case "Role": createRole(); break;
+                        case "Employee": createEmployee(); break;
+                    }
+                })
                 .catch(err => { if (err) throw err });
         })
         .catch(err => console.log(err));
 }
 
-function exit() {
-    process.exit();
+function createDepartment() {
+    console.log("Create it baby");
 }
