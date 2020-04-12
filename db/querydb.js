@@ -53,11 +53,11 @@ class Database {
         });
     }
 
-    insertEmployee(employee, args) {
+    insertDepartment(department, args) {
         return new Promise((resolve, reject) => {
             let sql =
-                `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-                VALUES ("${employee.firstName}", "${employee.lastName}", ${employee.roleID}, ${employee.managerID});`;
+                `INSERT INTO department (name)
+                VALUES ("${department}");`;
             this.connection.query(sql, args, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
@@ -77,6 +77,18 @@ class Database {
         });
     }
 
+    insertEmployee(employee, args) {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                VALUES ("${employee.firstName}", "${employee.lastName}", ${employee.roleID}, ${employee.managerID});`;
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
     tableHasData() {
         let departments = [];
         let roles = [];
@@ -89,6 +101,7 @@ class Database {
                 .then(() => this.getAll("employee"))
                 .then(rows => employees = rows)
                 .then(() => {
+                    console.log(departments);
                     resolve({
                         departments: (departments.length !== 0),
                         roles: (roles.length !== 0),

@@ -56,7 +56,7 @@ function homeMenu() {
 
 function createMenu() {
     connection.tableHasData()
-        .then(({ departmentsHasData, rolesHasData, employeesHasData }) => {
+        .then(({ departments, roles, employees }) => {
             inquirer
                 .prompt({
                     name: "createAnswer",
@@ -64,13 +64,13 @@ function createMenu() {
                     message: "Create...",
                     choices: [
                         { name: "Department" },
-                        { name: "Role", disabled: (departmentsHasData) ? false : "Disabled: Must have created at least one department" },
-                        { name: "Employee", disabled: (rolesHasData) ? false : "Disabled: Must have created at least one role" }
+                        { name: "Role", disabled: (departments) ? false : "Disabled, create department first." },
+                        { name: "Employee", disabled: (roles) ? false : "Disabled, create role first." }
                     ]
                 })
                 .then(({ createAnswer }) => {
                     switch (createAnswer) {
-                        case "Department": createDepartment(); break;
+                        case "Department": askDepartment(); break;
                         case "Role": createRole(); break;
                         case "Employee": createEmployee(); break;
                     }
@@ -80,6 +80,21 @@ function createMenu() {
         .catch(err => console.log(err));
 }
 
-function createDepartment() {
-    console.log("Create it baby");
+function askDepartment() {
+    connection.getCol("name", "department")
+        .then(depts => depts.map(obj => obj.name))
+        .then(depts => {
+            console.log(depts);
+            return inquirer
+                .prompt({
+                    name: "answerDepartment",
+                    type: "input",
+                    message: "Enter department name...",
+                    validate: (answer) => (depts.includes(answer)) ? "Department name already exists. Choose a different name." : true
+                })
+        })
+        .then(({ answerDepartment }) => connection.insertDepartment(answerDepartment))
+        .then(() => homeMenu())
+        .catch(err => { if (err) throw err });
+
 }
