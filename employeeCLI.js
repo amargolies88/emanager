@@ -48,7 +48,7 @@ function homeMenu() {
             switch (homeAnswer) {
                 case "Create": createMenu(); break;
                 case "Edit": editMenu(); break;
-                case "Exit": console.log("Thank you for using eManager. Bye!"); connection.close(); break;
+                case "Exit": exit(); break;
             }
         })
         .catch(err => { if (err) throw err });
@@ -57,7 +57,7 @@ function homeMenu() {
 function createMenu() {
     connection.tableHasData()
         .then(({ departments, roles, employees }) => {
-            inquirer
+            return inquirer
                 .prompt({
                     name: "createAnswer",
                     type: "list",
@@ -65,7 +65,9 @@ function createMenu() {
                     choices: [
                         { name: "Department" },
                         { name: "Role", disabled: (departments) ? false : "Disabled, create department first." },
-                        { name: "Employee", disabled: (roles) ? false : "Disabled, create role first." }
+                        { name: "Employee", disabled: (roles) ? false : "Disabled, create role first." },
+                        { name: "Back" },
+                        { name: "Exit" }
                     ]
                 })
                 .then(({ createAnswer }) => {
@@ -73,11 +75,13 @@ function createMenu() {
                         case "Department": askDepartment(); break;
                         case "Role": createRole(); break;
                         case "Employee": createEmployee(); break;
+                        case "Back": homeMenu(); break;
+                        case "Exit": exit(); break;
+                        default: exit();
                     }
                 })
-                .catch(err => { if (err) throw err });
         })
-        .catch(err => console.log(err));
+        .catch(err => { if (err) throw err });
 }
 
 function askDepartment() {
@@ -97,4 +101,9 @@ function askDepartment() {
         .then(() => homeMenu())
         .catch(err => { if (err) throw err });
 
+}
+
+function exit() {
+    console.log("Thank you for using eManager. Bye!");
+    connection.close();
 }
