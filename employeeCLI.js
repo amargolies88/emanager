@@ -27,12 +27,12 @@ function homeMenu(message = "Main Menu. Choose an option...") {
             name: "homeAnswer",
             type: "list",
             message: message,
-            choices: ["Create", "Edit", "Exit"]
+            choices: ["Create", "View and Edit", "Exit"]
         })
         .then(({ homeAnswer }) => {
             switch (homeAnswer) {
                 case "Create": createMenu(); break;
-                case "Edit": editMenu(); break;
+                case "View and Edit": editMenu(); break;
                 case "Exit": exit(); break;
             }
         })
@@ -203,6 +203,48 @@ function askEmployee() {
             return homeMenu();
         })
         .catch(err => { if (err) throw err });
+}
+
+function editMenu() {
+    connection.tableHasData()
+        .then(({ departments, roles, employees }) => {
+            return inquirer
+                .prompt({
+                    name: "editAnswer",
+                    type: "list",
+                    message: "Select category to edit...",
+                    choices: [
+                        { name: "Departments", disabled: (departments) ? false : "No departments to edit." },
+                        { name: "Roles", disabled: (roles) ? false : "No roles to edit." },
+                        { name: "Employees", disabled: (employees) ? false : "No employees to edit." },
+                        { name: "Back" },
+                        { name: "Exit" }
+                    ]
+                })
+                .then(({ editAnswer }) => {
+                    switch (editAnswer) {
+                        case "Departments": editDepartments(); break;
+                        case "Roles": editRoles(); break;
+                        case "Employees": editEmployees(); break;
+                        case "Back": homeMenu(); break;
+                        case "Exit": exit(); break;
+                        default: exit();
+                    }
+                })
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function editDepartments() {
+    console.log("lets edit Departments!")
+}
+
+function editRoles() {
+    console.log("lets edit Roles!")
+}
+
+function editEmployees() {
+    console.log("lets edit Employees!")
 }
 
 function exit() {
