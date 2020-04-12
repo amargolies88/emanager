@@ -236,7 +236,9 @@ function editMenu() {
 }
 
 function editDepartments() {
-    console.log("lets edit Departments!")
+    connection.getAll("department")
+        .then(res => console.table(res))
+        .catch(err => { if (err) throw err });
 }
 
 function editRoles() {
