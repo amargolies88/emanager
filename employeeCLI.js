@@ -4,20 +4,12 @@ const inquirer = require("inquirer");
 const cTable = require("console.table");
 
 // Classes
-const department = require("./classes/department")
-const employee = require("./classes/employee")
-const role = require("./classes/role")
+const Department = require("./classes/department")
+const Employee = require("./classes/employee")
+const Role = require("./classes/role")
 const Database = require("./db/querydb");
 
-// MySQL Connection
-// const connection = mysql.createConnection({
-//     host: "localhost",
-//     port: 3306,
-//     user: "root",
-//     password: "root",
-//     database: "employeeDB"
-// });
-
+// MySQL Connection 
 const connection = new Database({
     host: "localhost",
     port: 3306,
@@ -26,22 +18,15 @@ const connection = new Database({
     database: "employeeDB"
 })
 
-alan = new employee("Alan", "Margolies", 1, 1);
-let someThang;
+// *** Interface Starts Here ***
+homeMenu("Welcome to eManager. Choose an option to get started.");
 
-
-homeMenu();
-// console.log("hello");
-
-
-function test() { console.log("test") }
-
-function homeMenu() {
+function homeMenu(message = "Main Menu. Choose an option...") {
     inquirer
         .prompt({
             name: "homeAnswer",
             type: "list",
-            message: "Welcome to eManager. Choose an option to get started.",
+            message: message,
             choices: ["Create", "Edit", "Exit"]
         })
         .then(({ homeAnswer }) => {
@@ -73,8 +58,8 @@ function createMenu() {
                 .then(({ createAnswer }) => {
                     switch (createAnswer) {
                         case "Department": askDepartment(); break;
-                        case "Role": createRole(); break;
-                        case "Employee": createEmployee(); break;
+                        case "Role": askRole(); break;
+                        case "Employee": askEmployee(); break;
                         case "Back": homeMenu(); break;
                         case "Exit": exit(); break;
                         default: exit();
@@ -88,7 +73,6 @@ function askDepartment() {
     connection.getCol("name", "department")
         .then(depts => depts.map(obj => obj.name))
         .then(depts => {
-            console.log(depts);
             return inquirer
                 .prompt({
                     name: "answerDepartment",
@@ -98,9 +82,127 @@ function askDepartment() {
                 })
         })
         .then(({ answerDepartment }) => connection.insertDepartment(answerDepartment))
-        .then(() => homeMenu())
+        .then(() => {
+            console.log("Successfully added department!");
+            return homeMenu();
+        })
         .catch(err => { if (err) throw err });
 
+}
+
+function askRole() {
+    let roleNames = [];
+    let depList = [];
+    connection.getAll("department")
+        .then(departments => {
+            depList = departments.map(department => {
+                return {
+                    name: department.name,
+                    value: department.id
+                };
+            });
+            return;
+        })
+        .then(() => connection.getCol("name", "role"))
+        .then(roles => roles.map(obj => obj.name))
+        .then(roleNames => {
+            return inquirer
+                .prompt([
+                    {
+                        name: "answerRoleName",
+                        type: "input",
+                        message: "Enter name of role...",
+                        validate: (answer) => (roleNames.includes(answer)) ? "Role name already exists." : true
+                    },
+                    {
+                        name: "answerRoleSalary",
+                        type: "input",
+                        message: "Enter salary for this role...",
+                        validate: (answer) => (answer.match(/^[0-9]*$/gm)) ? true : "Enter numbers only."
+                    },
+                    {
+                        name: "answerRoleDepartment",
+                        type: "list",
+                        message: "Select department for role...",
+                        choices: depList
+                    }
+                ])
+        })
+        .then(answers => {
+            let role = {
+                name: answers.answerRoleName,
+                salary: answers.answerRoleSalary,
+                department_id: answers.answerRoleDepartment
+            }
+            return connection.insertRole(role);
+        })
+        .then(() => {
+            console.log("Successfully added role.");
+            return homeMenu();
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function askEmployee() {
+    let employees = [];
+    let roles = [];
+    connection.getAll("employee")
+        .then(res => {
+            employees = res.map(employee => {
+                return {
+                    name: `${employee.first_name} ${employee.last_name}`,
+                    value: employee.id
+                };
+            });
+            employees.unshift({ name: "No Manager", value: 0 })
+            return;
+        })
+        .then(() => connection.getAll("role"))
+        .then(res => {
+            roles = res.map(role => {
+                return {
+                    name: role.name,
+                    value: role.id
+                };
+            });
+            return;
+        })
+        .then(() => {
+            return inquirer
+                .prompt([
+                    {
+                        name: "answerFirstName",
+                        type: "input",
+                        message: "Enter employee's FIRST name..."
+                    },
+                    {
+                        name: "answerLastName",
+                        type: "input",
+                        message: "Enter employee's LAST name..."
+                    },
+                    {
+                        name: "answerRole",
+                        type: "list",
+                        message: "Select role for employee...",
+                        choices: roles
+                    },
+                    {
+                        name: "answerManager",
+                        type: "list",
+                        message: "Select manager for employee or 'No Manager' if employee does not have a manager.",
+                        choices: employees
+                    }
+                ])
+        })
+        .then((answer) => {
+            const employee = new Employee(answer.answerFirstName, answer.answerLastName, answer.answerRole, answer.answerManager);
+            return connection.insertEmployee(employee);
+        })
+        .then(() => {
+            console.log("Successfully added employee.");
+            return homeMenu();
+        })
+        .catch(err => { if (err) throw err });
 }
 
 function exit() {

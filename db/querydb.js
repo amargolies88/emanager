@@ -101,7 +101,6 @@ class Database {
                 .then(() => this.getAll("employee"))
                 .then(rows => employees = rows)
                 .then(() => {
-                    console.log(departments);
                     resolve({
                         departments: (departments.length !== 0),
                         roles: (roles.length !== 0),
