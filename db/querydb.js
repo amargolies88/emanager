@@ -39,7 +39,21 @@ class Database {
             this.connection.query(sql, args, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
-            })
+            });
+        });
+    }
+
+    getRoleExtra(args) {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT role.id, role.name, role.salary, department.name AS "department_name", department.id AS "department_id"
+                FROM role
+                INNER JOIN department 
+                ON role.department_id = department.id`
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
         });
     }
 

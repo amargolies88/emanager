@@ -225,8 +225,8 @@ function editMenu() {
         .then(({ editAnswer }) => {
             switch (editAnswer) {
                 case "Departments": selectDepartments(); break;
-                case "Roles": editRoles(); break;
-                case "Employees": editEmployees(); break;
+                case "Roles": selectRoles(); break;
+                case "Employees": selectEmployees(); break;
                 case "Back": homeMenu(); break;
                 case "Exit": exit(); break;
                 default: exit();
@@ -282,11 +282,10 @@ function editDepartment(department) {
         .catch(err => { if (err) throw err });
 }
 
-// ****************************************************
 function editDepartmentName(targetDept) {
     connection.getCol("name", "department")
         .then(departments => {
-            const splicedDepartments = departments.map(dept => dept.name);
+            let splicedDepartments = departments.map(dept => dept.name);
             splicedDepartments.splice(targetDept.id - 1, 1);
             return splicedDepartments;
         })
@@ -300,16 +299,93 @@ function editDepartmentName(targetDept) {
                 })
         })
         .then(({ newDeptName }) => connection.update("department", "name", newDeptName, targetDept.id))
-        .then(what => console.log(what))
+        .then(() => {
+            console.log("Successfully updated department name.");
+            return selectDepartments();
+        })
         .catch(err => { if (err) throw err });
 
 }
 
-function editRoles() {
-    console.log("lets edit Roles!")
+function selectRoles() {
+    let choices = [];
+    connection.getRoleExtra()
+        .then(roles => {
+            choices = roles.map((obj) => {
+                return {
+                    name: `${obj.name}   (Salary: ${obj.salary}   Department: ${obj.department_name})`,
+                    value: obj
+                }
+            });
+            choices.unshift("Back");
+            return;
+        })
+        .then(() => {
+            return inquirer
+                .prompt({
+                    name: "answerSelectRoles",
+                    type: "list",
+                    message: "Select role to edit...",
+                    choices: choices
+                })
+        })
+        .then(({ answerSelectRoles }) => {
+            if (answerSelectRoles === "Back") return editMenu();
+            else return editRole(answerSelectRoles);
+        })
+        .catch(err => { if (err) throw err });
 }
 
-function editEmployees() {
+function editRole(role) {
+    connection.getRoleExtra()
+        .then(stuff => {
+            return inquirer
+                .prompt({
+                    name: "editRole",
+                    type: "list",
+                    message: `\nRole: ${role.name}\nSalary: ${role.salary}\nDepartment: ${role.department_name}`,
+                    choices: ["Change Name", "Change Salary", "Change Department", "Back", "Exit"]
+                });
+        })
+        .then(({ editRole }) => {
+            switch (editRole) {
+                case "Change Name": editRoleName(role); break;
+                case "Back": selectRoles(); break;
+                default: selectRoles();
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function editRoleName(role) {
+    let updatedRole = role;
+    connection.getCol("name", "role")
+        .then(nameList => {
+            let splicedNameList = nameList.map(item => item.name);
+            splicedNameList.splice(role.id - 1, 1);
+            return splicedNameList;
+        })
+        .then(roleValidateList => {
+            return inquirer
+                .prompt({
+                    name: "newRoleName",
+                    type: "input",
+                    message: "Ente new role name",
+                    validate: (answer) => (roleValidateList.includes(answer)) ? "Role name already exists. Choose a different name." : true
+                });
+        })
+        .then(({ newRoleName }) => {
+            updatedRole.name = newRoleName;
+            return connection.update("role", "name", newRoleName, updatedRole.id);
+        })
+        .then(() => {
+            console.log("Succcessfully updated role name.");
+            return editRole(updatedRole);
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function selectEmployees() {
     console.log("lets edit Employees!")
 }
 
