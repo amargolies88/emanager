@@ -283,7 +283,7 @@ function editDepartment(department) {
 }
 
 function editDepartmentName() {
-    console.log("EDIT DEPARTMENT NAMELEL LOL");
+
 }
 
 function editRoles() {
