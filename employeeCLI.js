@@ -525,7 +525,6 @@ function editEmployee(emp) {
 
 function editEmployeeFirstName(emp) {
     updatedEmployee = emp;
-    console.log(emp);
     inquirer
         .prompt({
             name: "empFirstName",
@@ -542,9 +541,62 @@ function editEmployeeFirstName(emp) {
         })
 }
 
-function editEmployeeRole(emp) {
-
+function editEmployeeLastName(emp) {
+    updatedEmployee = emp;
+    inquirer
+        .prompt({
+            name: "empLastName",
+            type: "input",
+            message: "Enter employee LAST name..."
+        })
+        .then(({ empLastName }) => {
+            updatedEmployee.last_name = empLastName;
+            return connection.update("employee", "last_name", empLastName, emp.id);
+        })
+        .then(() => {
+            console.log("Successfully changed employee last name.");
+            return editEmployee(updatedEmployee);
+        })
 }
+
+function editEmployeeRole(emp) {
+    updatedEmployee = emp;
+    choices = [];
+    connection.getRoleExtra()
+        .then(roles => {
+            choices = roles.map(role => {
+                return {
+                    name: role.name,
+                    value: role
+                }
+            });
+            choices.splice(emp.role_id - 1, 1);
+            choices.unshift(new inquirer.Separator());
+            choices.unshift("Exit");
+            choices.unshift("Back");
+            return inquirer
+                .prompt({
+                    name: "selectedRole",
+                    type: "list",
+                    choices: choices,
+                    default: 2
+                });
+        })
+        .then(({ selectedRole }) => {
+            console.log(selectedRole);
+            updatedEmployee.role_id = selectedRole.id;
+            updatedEmployee.role_name = selectedRole.name;
+            updatedEmployee.department_name = selectedRole.department_name;
+            updatedEmployee.department_id = selectedRole.department_id;
+            return connection.update("employee", "role_id", selectedRole.id, emp.id);
+        })
+        .then(() => {
+            console.log("Successfully changed employee role.");
+            return editEmployee(updatedEmployee);
+        })
+        .catch(err => { if (err) throw err });
+}
+
 
 function editEmployeeManager(emp) {
 
