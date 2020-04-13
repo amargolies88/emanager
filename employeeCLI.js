@@ -224,7 +224,7 @@ function editMenu() {
         })
         .then(({ editAnswer }) => {
             switch (editAnswer) {
-                case "Departments": editDepartments(); break;
+                case "Departments": selectDepartments(); break;
                 case "Roles": editRoles(); break;
                 case "Employees": editEmployees(); break;
                 case "Back": homeMenu(); break;
@@ -235,36 +235,55 @@ function editMenu() {
         .catch(err => { if (err) throw err });
 }
 
-function editDepartments() {
+function selectDepartments() {
     let choices = [];
     connection.getAll("department")
         .then(departments => {
             choices = departments.map((obj) => {
                 return {
                     name: obj.name,
-                    value: //something
+                    value: obj
                 }
             });
+            choices.unshift("Back");
             return;
         })
         .then(() => {
             return inquirer
                 .prompt({
-                    name: "answerEditDepartment",
+                    name: "answerSelectDepartment",
                     type: "list",
                     message: "Select department to edit...",
                     choices: choices
                 })
         })
-        .then(({ answerEditDepartment }) => {
-            //  Display Department name
-            //      Display 'name' as property to edit
-            return inquirer
-                .prompt({
-
-                })
+        .then(({ answerSelectDepartment }) => {
+            if (answerSelectDepartment === "Back") return editMenu();
+            else return editDepartment(answerSelectDepartment);
         })
         .catch(err => { if (err) throw err });
+}
+
+function editDepartment(department) {
+    inquirer
+        .prompt({
+            name: "editDepartment",
+            type: "list",
+            message: `Department: ${department.name}`,
+            choices: ["Change Name", "Back", "Exit"]
+        })
+        .then(({ editDepartment }) => {
+            switch (editDepartment) {
+                case "Change Name": editDepartmentName(); break;
+                case "Back": selectDepartments(); break;
+                default: selectDepartments();
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function editDepartmentName() {
+    console.log("EDIT DEPARTMENT NAMELEL LOL");
 }
 
 function editRoles() {
