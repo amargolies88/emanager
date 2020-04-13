@@ -57,6 +57,30 @@ class Database {
         });
     }
 
+    getEmployeeExtra(args) {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT 
+                employee.id, employee.first_name, employee.last_name, employee.role_id, employee.manager_id,
+                role.name AS role_name,
+                department.id AS department_id,
+                department.name AS department_name,
+                CONCAT(fresh.first_name, ' ', fresh.last_name) AS Manager
+                FROM employee
+                INNER JOIN role 
+                ON employee.role_id = role.id
+                INNER JOIN department 
+                ON role.department_id = department.id
+                LEFT OUTER JOIN employee fresh
+                ON employee.manager_id = fresh.id
+                ORDER BY employee.id ASC;`
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
     getColWhere(col, table, statement, args) {
         return new Promise((resolve, reject) => {
             let sql = `SELECT ${col} FROM ${table} WHERE ${statement};`;
