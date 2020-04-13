@@ -65,6 +65,16 @@ class Database {
         });
     }
 
+    update(table, col, value, id, args) {
+        return new Promise((resolve, reject) => {
+            let sql = `UPDATE ${table} SET ${col} = "${value}" WHERE id = ${id}`
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            })
+        });
+    }
+
     insertRole(role, args) {
         return new Promise((resolve, reject) => {
             let sql =

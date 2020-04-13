@@ -283,18 +283,25 @@ function editDepartment(department) {
 }
 
 // ****************************************************
-function editDepartmentName(department) {
+function editDepartmentName(targetDept) {
     connection.getCol("name", "department")
-        .then(departments => departments.map(dept => dept.name).splice(department.id - 1, 1))
+        .then(departments => {
+            const splicedDepartments = departments.map(dept => dept.name);
+            splicedDepartments.splice(targetDept.id - 1, 1);
+            return splicedDepartments;
+        })
         .then(departments => {
             return inquirer
                 .prompt({
                     name: "newDeptName",
                     type: "input",
-                    message: "Enter new name..."
-                    validate: 
+                    message: "Enter new name...",
+                    validate: (answer) => (departments.includes(answer)) ? "Department name already exists. Choose a different name." : true
                 })
         })
+        .then(({ newDeptName }) => connection.update("department", "name", newDeptName, targetDept.id))
+        .then(what => console.log(what))
+        .catch(err => { if (err) throw err });
 
 }
 
