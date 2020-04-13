@@ -274,7 +274,7 @@ function editDepartment(department) {
         })
         .then(({ editDepartment }) => {
             switch (editDepartment) {
-                case "Change Name": editDepartmentName(); break;
+                case "Change Name": editDepartmentName(department); break;
                 case "Back": selectDepartments(); break;
                 default: selectDepartments();
             }
@@ -282,7 +282,19 @@ function editDepartment(department) {
         .catch(err => { if (err) throw err });
 }
 
-function editDepartmentName() {
+// ****************************************************
+function editDepartmentName(department) {
+    connection.getCol("name", "department")
+        .then(departments => departments.map(dept => dept.name).splice(department.id - 1, 1))
+        .then(departments => {
+            return inquirer
+                .prompt({
+                    name: "newDeptName",
+                    type: "input",
+                    message: "Enter new name..."
+                    validate: 
+                })
+        })
 
 }
 
