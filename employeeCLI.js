@@ -54,17 +54,17 @@ function createMenu() {
                         { name: "Back" },
                         { name: "Exit" }
                     ]
-                })
-                .then(({ createAnswer }) => {
-                    switch (createAnswer) {
-                        case "Department": askDepartment(); break;
-                        case "Role": askRole(); break;
-                        case "Employee": askEmployee(); break;
-                        case "Back": homeMenu(); break;
-                        case "Exit": exit(); break;
-                        default: exit();
-                    }
-                })
+                });
+        })
+        .then(({ createAnswer }) => {
+            switch (createAnswer) {
+                case "Department": askDepartment(); break;
+                case "Role": askRole(); break;
+                case "Employee": askEmployee(); break;
+                case "Back": homeMenu(); break;
+                case "Exit": exit(); break;
+                default: exit();
+            }
         })
         .catch(err => { if (err) throw err });
 }
@@ -221,23 +221,49 @@ function editMenu() {
                         { name: "Exit" }
                     ]
                 })
-                .then(({ editAnswer }) => {
-                    switch (editAnswer) {
-                        case "Departments": editDepartments(); break;
-                        case "Roles": editRoles(); break;
-                        case "Employees": editEmployees(); break;
-                        case "Back": homeMenu(); break;
-                        case "Exit": exit(); break;
-                        default: exit();
-                    }
-                })
+        })
+        .then(({ editAnswer }) => {
+            switch (editAnswer) {
+                case "Departments": editDepartments(); break;
+                case "Roles": editRoles(); break;
+                case "Employees": editEmployees(); break;
+                case "Back": homeMenu(); break;
+                case "Exit": exit(); break;
+                default: exit();
+            }
         })
         .catch(err => { if (err) throw err });
 }
 
 function editDepartments() {
+    let choices = [];
     connection.getAll("department")
-        .then(res => console.table(res))
+        .then(departments => {
+            choices = departments.map((obj) => {
+                return {
+                    name: obj.name,
+                    value: //something
+                }
+            });
+            return;
+        })
+        .then(() => {
+            return inquirer
+                .prompt({
+                    name: "answerEditDepartment",
+                    type: "list",
+                    message: "Select department to edit...",
+                    choices: choices
+                })
+        })
+        .then(({ answerEditDepartment }) => {
+            //  Display Department name
+            //      Display 'name' as property to edit
+            return inquirer
+                .prompt({
+
+                })
+        })
         .catch(err => { if (err) throw err });
 }
 
