@@ -350,6 +350,8 @@ function editRole(role) {
         .then(({ editRole }) => {
             switch (editRole) {
                 case "Change Name": editRoleName(role); break;
+                case "Change Salary": editRoleSalary(role); break;
+                case "Change Department": editRoleDepartment(role); break;
                 case "Back": selectRoles(); break;
                 default: selectRoles();
             }
@@ -383,6 +385,30 @@ function editRoleName(role) {
             return editRole(updatedRole);
         })
         .catch(err => { if (err) throw err });
+}
+
+function editRoleSalary(role) {
+    let updatedRole = role;
+    inquirer
+        .prompt({
+            name: "roleSalary",
+            type: "input",
+            message: "Enter new salary for role",
+            validate: (answer) => (answer.match(/^[0-9]*$/gm)) ? true : "Enter numbers only."
+        })
+        .then(({ roleSalary }) => {
+            updatedRole.salary = roleSalary;
+            return connection.update("role", "salary", roleSalary, role.id);
+        })
+        .then(() => {
+            console.log("Successfully updated role salary.");
+            return editRole(updatedRole);
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function editRoleDepartment(role) {
+
 }
 
 function selectEmployees() {
