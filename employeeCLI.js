@@ -583,23 +583,63 @@ function editEmployeeRole(emp) {
                 });
         })
         .then(({ selectedRole }) => {
-            console.log(selectedRole);
-            updatedEmployee.role_id = selectedRole.id;
-            updatedEmployee.role_name = selectedRole.name;
-            updatedEmployee.department_name = selectedRole.department_name;
-            updatedEmployee.department_id = selectedRole.department_id;
-            return connection.update("employee", "role_id", selectedRole.id, emp.id);
-        })
-        .then(() => {
-            console.log("Successfully changed employee role.");
-            return editEmployee(updatedEmployee);
+            switch (selectedRole) {
+                case "Back": return editEmployee(updatedEmployee);
+                case "Exit": return exit();
+                default:
+                    updatedEmployee.role_id = selectedRole.id;
+                    updatedEmployee.role_name = selectedRole.name;
+                    updatedEmployee.department_name = selectedRole.department_name;
+                    updatedEmployee.department_id = selectedRole.department_id;
+                    connection.update("employee", "role_id", selectedRole.id, emp.id)
+                        .then(() => {
+                            console.log("Successfully changed employee role.");
+                            return editEmployee(updatedEmployee);
+                        });
+            }
         })
         .catch(err => { if (err) throw err });
 }
 
 
 function editEmployeeManager(emp) {
-
+    updatedEmployee = emp;
+    choices = [];
+    connection.getAll("employee")
+        .then(emps => {
+            choices = emps.map(emp => {
+                return {
+                    name: `${emp.first_name} ${emp.last_name}`,
+                    value: emp
+                }
+            });
+            choices.splice(emp.id - 1, 1);
+            choices.unshift(new inquirer.Separator());
+            choices.unshift("Exit");
+            choices.unshift("Back");
+            return inquirer
+                .prompt({
+                    name: "selectedManager",
+                    type: "list",
+                    choices: choices,
+                    default: 2
+                })
+        })
+        .then(({ selectedManager }) => {
+            switch (selectedManager) {
+                case "Exit": return exit();
+                case "Back": return editEmployee(updatedEmployee)
+                default:
+                    updatedEmployee.manager_id = selectedManager.id;
+                    updatedEmployee.manager = `${selectedManager.first_name} ${selectedManager.last_name}`;
+                    return connection.update("employee", "manager_id", selectedManager.id, updatedEmployee.id)
+                        .then(() => {
+                            console.log("Successfully changed employee manager.");
+                            return editEmployee(updatedEmployee);
+                        });
+            }
+        })
+        .catch(err => { if (err) throw err });
 }
 
 function exit() {
