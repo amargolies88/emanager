@@ -43,20 +43,18 @@ function homeMenu(message = "Main Menu. Choose an option...") {
 function createMenu() {
     connection.tableHasData()
         .then(({ departments, roles, employees }) => {
+            let choices = [
+                { name: "Department" },
+                { name: "Role", disabled: (departments) ? false : "Disabled, create department first." },
+                { name: "Employee", disabled: (roles) ? false : "Disabled, create role first." }
+            ]
             return inquirer
                 .prompt({
                     name: "createAnswer",
                     type: "list",
                     message: "Create...",
-                    choices: [
-                        { name: "Back" },
-                        { name: "Exit" },
-                        new inquirer.Separator(),
-                        { name: "Department" },
-                        { name: "Role", disabled: (departments) ? false : "Disabled, create department first." },
-                        { name: "Employee", disabled: (roles) ? false : "Disabled, create role first." }
-                    ],
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 });
         })
         .then(({ createAnswer }) => {
@@ -64,6 +62,7 @@ function createMenu() {
                 case "Department": askDepartment(); break;
                 case "Role": askRole(); break;
                 case "Employee": askEmployee(); break;
+                case "Main Menu": homeMenu(); break;
                 case "Back": homeMenu(); break;
                 case "Exit": exit(); break;
                 default: exit();
@@ -211,20 +210,18 @@ function askEmployee() {
 function editMenu() {
     connection.tableHasData()
         .then(({ departments, roles, employees }) => {
+            let choices = [
+                { name: "Departments", disabled: (departments) ? false : "No departments to edit." },
+                { name: "Roles", disabled: (roles) ? false : "No roles to edit." },
+                { name: "Employees", disabled: (employees) ? false : "No employees to edit." }
+            ];
             return inquirer
                 .prompt({
                     name: "editAnswer",
                     type: "list",
                     message: "Select category to edit...",
-                    choices: [
-                        { name: "Back" },
-                        { name: "Exit" },
-                        new inquirer.Separator(),
-                        { name: "Departments", disabled: (departments) ? false : "No departments to edit." },
-                        { name: "Roles", disabled: (roles) ? false : "No roles to edit." },
-                        { name: "Employees", disabled: (employees) ? false : "No employees to edit." }
-                    ],
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ editAnswer }) => {
@@ -232,6 +229,7 @@ function editMenu() {
                 case "Departments": selectDepartments(); break;
                 case "Roles": selectRoles(); break;
                 case "Employees": selectEmployees(); break;
+                case "Main Menu": homeMenu(); break;
                 case "Back": homeMenu(); break;
                 case "Exit": exit(); break;
                 default: exit();
@@ -250,9 +248,6 @@ function selectDepartments() {
                     value: obj
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return;
         })
         .then(() => {
@@ -261,12 +256,13 @@ function selectDepartments() {
                     name: "answerSelectDepartment",
                     type: "list",
                     message: "Select department to edit...",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ answerSelectDepartment }) => {
             switch (answerSelectDepartment) {
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editMenu();
                 case "Exit": return exit();
                 default: return editDepartment(answerSelectDepartment);
@@ -281,13 +277,14 @@ function editDepartment(department) {
             name: "editDepartment",
             type: "list",
             message: `Department: ${department.name}`,
-            choices: ["Back", "Exit", new inquirer.Separator(), "Change Name", "Delete Department"],
-            default: 2
+            choices: addMenu(["Change Name", "Delete Department"]),
+            default: 3
         })
         .then(({ editDepartment }) => {
             switch (editDepartment) {
                 case "Change Name": editDepartmentName(department); break;
                 case "Delete Department": deleteDepartment(department); break;
+                case "Main Menu": homeMenu(); break;
                 case "Back": selectDepartments(); break;
                 case "Exit": exit(); break;
                 default: selectDepartments();
@@ -332,29 +329,24 @@ function deleteDepartment(dept) {
                         name: "moveOrKeep",
                         type: "list",
                         message: "What would you like to do with the employees and roles contained within this department?",
-                        choices: [
-                            "Exit",
-                            "Back",
-                            new inquirer.Separator(),
-                            "Move to new department",
-                            "Remove All"
-                        ],
-                        default: 2
+                        choices: addMenu(["Move to new department", "Remove All"]),
+                        default: 3
                     })
             }
         })
         .then(({ moveOrKeep }) => {
             switch (moveOrKeep) {
                 case "Exit": return exit();
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editDepartment(dept);
-                case "Remove All": return deleteDepartmentRemove(dept);
-                case "Move to new department": return selectDepartmentMove(dept);
+                case "Remove All": return deleteDepartmentDeleteAll(dept);
+                case "Move to new department": return deleteDepartmentMoveAll(dept);
             }
         })
         .catch(err => { if (err) return err });
 }
 
-function selectDepartmentMove(dept) {
+function deleteDepartmentMoveAll(dept) {
     console.log(dept);
     let choices = [];
     connection.getAll("department")
@@ -366,34 +358,36 @@ function selectDepartmentMove(dept) {
                     value: row
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return inquirer
                 .prompt({
                     name: "receivingDept",
                     type: "list",
                     message: "Move roles and employees to department...",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ receivingDept }) => connection.updateMore("role", "department_id", receivingDept.id, dept.id))
+        .then(() => console.log("Successfully moved roles."))
+        .then(() => connection.deleteFromWhere("department", "id", dept.id))
         .then(() => {
-            console.log("Successfully moved roles.");
+            console.log("Successfully deleted department.");
+            return selectDepartments();
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function deleteDepartmentDeleteAll(dept) {
+    connection.deleteAllByDept(dept.id)
+        .then(() => {
+            console.log("Successfully deleted department and all employees and roles within.");
             return editMenu();
         })
         .catch(err => { if (err) throw err });
 }
 
-function deleteDepartmentRemove(dept) {
-    connection.deleteAllByDept(dept.id)
-        .then(() => editMenu())
-        .catch(err => { if (err) throw err });
-}
-
-function moveAllFromDepartment(dept) {
-
+function deleteDepartmentOnly(dept) {
+    connection.deleteFromWhere("department", "id", dept.id);
 }
 
 function selectRoles() {
@@ -406,9 +400,6 @@ function selectRoles() {
                     value: obj
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return;
         })
         .then(() => {
@@ -417,12 +408,13 @@ function selectRoles() {
                     name: "answerSelectRoles",
                     type: "list",
                     message: "Select role to edit...",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ answerSelectRoles }) => {
             switch (answerSelectRoles) {
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editMenu();
                 case "Exit": return exit();
                 default: return editRole(answerSelectRoles)
@@ -438,14 +430,15 @@ function editRole(role) {
             name: "editRole",
             type: "list",
             message: `\nRole: ${role.name}\nSalary: ${role.salary}\nDepartment: ${role.department_name}`,
-            choices: ["Back", "Exit", new inquirer.Separator(), "Change Name", "Change Salary", "Change Department"],
-            default: 2
+            choices: addMenu(["Change Name", "Change Salary", "Change Department"]),
+            default: 3
         })
         .then(({ editRole }) => {
             switch (editRole) {
                 case "Change Name": return editRoleName(role);
                 case "Change Salary": return editRoleSalary(role);
                 case "Change Department": return editRoleDepartment(role);
+                case "Main Menu": homeMenu(); break;
                 case "Back": return selectRoles();
                 case "Exit": return exit();
                 default: return selectRoles();
@@ -509,9 +502,6 @@ function editRoleDepartment(role) {
                     value: dept
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return;
         })
         .then(() => {
@@ -520,12 +510,13 @@ function editRoleDepartment(role) {
                     name: "newDept",
                     type: "list",
                     message: "Select new department for role.",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ newDept }) => {
             switch (newDept) {
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editRole(role);
                 case "Exit": return exit();
                 default:
@@ -551,20 +542,18 @@ function selectEmployees() {
                     value: emp
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return inquirer
                 .prompt({
                     name: "selectedEmployee",
                     type: "list",
                     message: "Select employee...",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ selectedEmployee }) => {
             switch (selectedEmployee) {
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editMenu();
                 case "Exit": return exit();
                 default: return editEmployee(selectedEmployee);
@@ -579,8 +568,8 @@ function editEmployee(emp) {
             name: "editEmployee",
             type: "list",
             message: `\nName: ${emp.first_name} ${emp.last_name}\nRole: ${emp.role_name}\nDepartment: ${emp.department_name}`,
-            choices: ["Back", "Exit", new inquirer.Separator(), "Change First Name", "Change Last Name", "Change Role", "Change Manager"],
-            default: 2
+            choices: addMenu(["Change First Name", "Change Last Name", "Change Role", "Change Manager"]),
+            default: 3
         })
         .then(({ editEmployee }) => {
             switch (editEmployee) {
@@ -588,6 +577,7 @@ function editEmployee(emp) {
                 case "Change Last Name": return editEmployeeLastName(emp);
                 case "Change Role": return editEmployeeRole(emp);
                 case "Change Manager": return editEmployeeManager(emp);
+                case "Main Menu": homeMenu(); break;
                 case "Back": return selectEmployees();
                 case "Exit": return exit();
                 default: return selectEmployees();
@@ -643,19 +633,17 @@ function editEmployeeRole(emp) {
                     value: role
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return inquirer
                 .prompt({
                     name: "selectedRole",
                     type: "list",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 });
         })
         .then(({ selectedRole }) => {
             switch (selectedRole) {
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editEmployee(updatedEmployee);
                 case "Exit": return exit();
                 default:
@@ -686,20 +674,18 @@ function editEmployeeManager(emp) {
                     value: obj
                 }
             });
-            choices.unshift(new inquirer.Separator());
-            choices.unshift("Exit");
-            choices.unshift("Back");
             return inquirer
                 .prompt({
                     name: "selectedManager",
                     type: "list",
-                    choices: choices,
-                    default: 2
+                    choices: addMenu(choices),
+                    default: 3
                 })
         })
         .then(({ selectedManager }) => {
             switch (selectedManager) {
                 case "Exit": return exit();
+                case "Main Menu": homeMenu(); break;
                 case "Back": return editEmployee(updatedEmployee)
                 default:
                     updatedEmployee.manager_id = selectedManager.id;
@@ -724,4 +710,13 @@ function viewMenu() {
 function exit() {
     console.log("Thank you for using eManager. Bye!");
     connection.close();
+}
+
+function addMenu(array) {
+    let menu = array;
+    menu.unshift(new inquirer.Separator());
+    menu.unshift("Back");
+    menu.unshift("Main Menu");
+    menu.unshift("Exit");
+    return menu;
 }
