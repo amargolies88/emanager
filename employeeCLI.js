@@ -355,10 +355,12 @@ function deleteDepartment(dept) {
 }
 
 function selectDepartmentMove(dept) {
+    console.log(dept);
     let choices = [];
-    connection.getCol("name", "department")
+    connection.getAll("department")
         .then(rows => {
-            choices = rows.map(row => {
+            choices = rows.filter(row => dept.id !== row.id);
+            choices = choices.map(row => {
                 return {
                     name: row.name,
                     value: row
@@ -376,7 +378,12 @@ function selectDepartmentMove(dept) {
                     default: 2
                 })
         })
-        .then(({ receivingDept }) => connection.update("role", "department"))
+        .then(({ receivingDept }) => connection.updateMore("role", "department_id", receivingDept.id, dept.id))
+        .then(() => {
+            console.log("Successfully moved roles.");
+            return editMenu();
+        })
+        .catch(err => { if (err) throw err });
 }
 
 function deleteDepartmentRemove(dept) {
