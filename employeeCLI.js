@@ -27,12 +27,13 @@ function homeMenu(message = "Main Menu. Choose an option...") {
             name: "homeAnswer",
             type: "list",
             message: message,
-            choices: ["Create", "View and Edit", "Exit"]
+            choices: ["Create", "Edit", "Exit"]
         })
         .then(({ homeAnswer }) => {
             switch (homeAnswer) {
                 case "Create": createMenu(); break;
-                case "View and Edit": editMenu(); break;
+                case "Edit": editMenu(); break;
+                case "View": viewMenu(); break;
                 case "Exit": exit(); break;
             }
         })
@@ -280,12 +281,13 @@ function editDepartment(department) {
             name: "editDepartment",
             type: "list",
             message: `Department: ${department.name}`,
-            choices: ["Back", "Exit", new inquirer.Separator(), "Change Name"],
+            choices: ["Back", "Exit", new inquirer.Separator(), "Change Name", "Delete Department"],
             default: 2
         })
         .then(({ editDepartment }) => {
             switch (editDepartment) {
                 case "Change Name": editDepartmentName(department); break;
+                case "Delete Department": deleteDepartment(department); break;
                 case "Back": selectDepartments(); break;
                 case "Exit": exit(); break;
                 default: selectDepartments();
@@ -297,17 +299,12 @@ function editDepartment(department) {
 function editDepartmentName(targetDept) {
     connection.getCol("name", "department")
         .then(departments => {
-            let splicedDepartments = departments.map(dept => dept.name);
-            splicedDepartments.splice(targetDept.id - 1, 1);
-            return splicedDepartments;
-        })
-        .then(departments => {
             return inquirer
                 .prompt({
                     name: "newDeptName",
                     type: "input",
                     message: "Enter new name...",
-                    validate: (answer) => (departments.includes(answer)) ? "Department name already exists. Choose a different name." : true
+                    validate: (answer) => (departments.map(dept => dept.name).includes(answer) && (answer !== targetDept.name)) ? "Department name already exists. Choose a different name." : true
                 })
         })
         .then(({ newDeptName }) => connection.update("department", "name", newDeptName, targetDept.id))
@@ -316,6 +313,79 @@ function editDepartmentName(targetDept) {
             return selectDepartments();
         })
         .catch(err => { if (err) throw err });
+
+}
+
+function deleteDepartment(dept) {
+    inquirer
+        .prompt({
+            name: "deptDeleteConfirm",
+            type: "confirm",
+            message: `Are you sure you want to delete department ${dept.name}?`
+        })
+        .then(({ deptDeleteConfirm }) => {
+            if (!deptDeleteConfirm) {
+                return editDepartment(dept);
+            } else {
+                return inquirer
+                    .prompt({
+                        name: "moveOrKeep",
+                        type: "list",
+                        message: "What would you like to do with the employees and roles contained within this department?",
+                        choices: [
+                            "Exit",
+                            "Back",
+                            new inquirer.Separator(),
+                            "Move to new department",
+                            "Remove All"
+                        ],
+                        default: 2
+                    })
+            }
+        })
+        .then(({ moveOrKeep }) => {
+            switch (moveOrKeep) {
+                case "Exit": return exit();
+                case "Back": return editDepartment(dept);
+                case "Remove All": return deleteDepartmentRemove(dept);
+                case "Move to new department": return selectDepartmentMove(dept);
+            }
+        })
+        .catch(err => { if (err) return err });
+}
+
+function selectDepartmentMove(dept) {
+    let choices = [];
+    connection.getCol("name", "department")
+        .then(rows => {
+            choices = rows.map(row => {
+                return {
+                    name: row.name,
+                    value: row
+                }
+            });
+            choices.unshift(new inquirer.Separator());
+            choices.unshift("Exit");
+            choices.unshift("Back");
+            return inquirer
+                .prompt({
+                    name: "receivingDept",
+                    type: "list",
+                    message: "Move roles and employees to department...",
+                    choices: choices,
+                    default: 2
+                })
+        })
+        .then(({ receivingDept }) => connection.update("role", "department"))
+}
+
+function deleteDepartmentRemove(dept) {
+    connection.deleteAllByDept(dept.id)
+        .then(() => editMenu())
+        .catch(err => { if (err) throw err });
+}
+
+function moveAllFromDepartment(dept) {
 
 }
 
@@ -380,17 +450,13 @@ function editRole(role) {
 function editRoleName(role) {
     let updatedRole = role;
     connection.getCol("name", "role")
-        .then(nameList => {
-            let splicedNameList = nameList.map(item => item.name);
-            splicedNameList.splice(role.id - 1, 1);
-            return splicedNameList;
-        })
+        .then(nameList => nameList.map(item => item.name))
         .then(roleValidateList => {
             return inquirer.prompt({
                 name: "newRoleName",
                 type: "input",
-                message: "Ente new role name",
-                validate: (answer) => (roleValidateList.includes(answer)) ? "Role name already exists. Choose a different name." : true
+                message: "Enter new role name",
+                validate: (answer) => (roleValidateList.includes(answer) && (answer !== role.name)) ? "Role name already exists. Choose a different name." : true
             });
         })
         .then(({ newRoleName }) => {
@@ -570,7 +636,6 @@ function editEmployeeRole(emp) {
                     value: role
                 }
             });
-            choices.splice(emp.role_id - 1, 1);
             choices.unshift(new inquirer.Separator());
             choices.unshift("Exit");
             choices.unshift("Back");
@@ -607,13 +672,13 @@ function editEmployeeManager(emp) {
     choices = [];
     connection.getAll("employee")
         .then(emps => {
-            choices = emps.map(emp => {
+            choices = emps.filter(obj => obj.id !== emp.id);
+            choices = choices.map(obj => {
                 return {
-                    name: `${emp.first_name} ${emp.last_name}`,
-                    value: emp
+                    name: `${obj.first_name} ${obj.last_name}`,
+                    value: obj
                 }
             });
-            choices.splice(emp.id - 1, 1);
             choices.unshift(new inquirer.Separator());
             choices.unshift("Exit");
             choices.unshift("Back");
@@ -640,6 +705,13 @@ function editEmployeeManager(emp) {
             }
         })
         .catch(err => { if (err) throw err });
+}
+
+function viewMenu() {
+    inquirer
+        .prompt({
+            name: ""
+        })
 }
 
 function exit() {

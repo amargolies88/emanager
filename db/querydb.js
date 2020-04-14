@@ -159,6 +159,63 @@ class Database {
         })
     }
 
+    getRolesByDept(deptID, args) {
+        const sql = `SELECT * FROM role WHERE department_id = ${deptID}`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        })
+    }
+
+    deleteEmployeesByRole(roleID, args) {
+        const sql = `DELETE FROM employee WHERE role_id = ${roleID}`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(sql, args, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    deleteAllByDept(deptID, args) {
+        let sql = `DELETE FROM employee WHERE `
+        let roleIds = [];
+        let uniqueRoleIds = [];
+        return new Promise((resolve, reject) => {
+            this.getRolesByDept(deptID)
+                .then(roles => {
+                    roleIds = roles.map((role => role.id));
+                    uniqueRoleIds = [...new Set(roleIds)];
+                    uniqueRoleIds.forEach(roleID => {
+                        this.deleteEmployeesByRole(roleID);
+                    });
+                    return;
+                })
+                .then(() => this.deleteFromWhere("role", "department_id", deptID))
+                .then(() => this.deleteFromWhere("department", "id", deptID))
+                .then(() => resolve())
+                .catch(err => reject(err));
+        })
+    }
+
+    deleteFromWhere(table, col, value) {
+        const sql = `DELETE FROM ${table} WHERE ${col} = ${value}`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(sql, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            })
+        })
+    }
+
+    deleteDeptRemove(dept) {
+        return new Promise((resolve, reject) => {
+
+        })
+    }
+
 
     close() {
         return new Promise((resolve, reject) => {
