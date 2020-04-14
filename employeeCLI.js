@@ -347,7 +347,6 @@ function deleteDepartment(dept) {
 }
 
 function deleteDepartmentMoveAll(dept) {
-    console.log(dept);
     let choices = [];
     connection.getAll("department")
         .then(rows => {
@@ -384,10 +383,6 @@ function deleteDepartmentDeleteAll(dept) {
             return editMenu();
         })
         .catch(err => { if (err) throw err });
-}
-
-function deleteDepartmentOnly(dept) {
-    connection.deleteFromWhere("department", "id", dept.id);
 }
 
 function selectRoles() {
@@ -430,7 +425,7 @@ function editRole(role) {
             name: "editRole",
             type: "list",
             message: `\nRole: ${role.name}\nSalary: ${role.salary}\nDepartment: ${role.department_name}`,
-            choices: addMenu(["Change Name", "Change Salary", "Change Department"]),
+            choices: addMenu(["Change Name", "Change Salary", "Change Department", "Delete Role"]),
             default: 3
         })
         .then(({ editRole }) => {
@@ -438,12 +433,85 @@ function editRole(role) {
                 case "Change Name": return editRoleName(role);
                 case "Change Salary": return editRoleSalary(role);
                 case "Change Department": return editRoleDepartment(role);
+                case "Delete Role": return deleteRole(role);
                 case "Main Menu": homeMenu(); break;
                 case "Back": return selectRoles();
                 case "Exit": return exit();
                 default: return selectRoles();
             }
         })
+        .catch(err => { if (err) throw err });
+}
+
+function deleteRole(role) {
+    inquirer
+        .prompt({
+            name: "roleDeleteConfirm",
+            type: "confirm",
+            message: `Are you sure you want to delete role ${role.name}?`
+        })
+        .then(({ roleDeleteConfirm }) => {
+            if (!roleDeleteConfirm) {
+                return editRole(role);
+            } else {
+                return inquirer
+                    .prompt({
+                        name: "moveOrKeep",
+                        type: "list",
+                        message: "What would you like to do with the employees that have this role?",
+                        choices: addMenu(["Move to new role", "Remove All"]),
+                        default: 3
+                    })
+            }
+        })
+        .then(({ moveOrKeep }) => {
+            switch (moveOrKeep) {
+                case "Exit": return exit();
+                case "Main Menu": homeMenu(); break;
+                case "Back": return editRole(role);
+                case "Remove All": return deleteRoleDeleteAll(role);
+                case "Move to new role": return deleteRoleMoveAll(role);
+            }
+        })
+        .catch(err => { if (err) return err });
+}
+
+function deleteRoleMoveAll(role) {
+    let choices = [];
+    connection.getAll("role")
+        .then(rows => {
+            choices = rows.filter(obj => obj.id !== role.id);
+            choices = choices.map(obj => {
+                return {
+                    name: obj.name,
+                    value: obj
+                }
+            });
+            return inquirer
+                .prompt({
+                    name: "receivingRole",
+                    type: "list",
+                    message: "Select new role for employees...",
+                    choices: addMenu(choices),
+                    default: 3
+                });
+        })
+        .then(({ receivingRole }) => connection.updateMore("employee", "role_id", receivingRole.id, role.id))
+        .then(() => console.log("Successfully moved employees to role."))
+        .then(() => connection.deleteFromWhere("role", "id", role.id))
+        .then(() => {
+            console.log("Successfully removed role.");
+            return editMenu();
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function deleteRoleDeleteAll(role) {
+    connection.deleteFromWhere("employee", "role_id", role.id)
+        .then(() => console.log("Successfully removed employees."))
+        .then(() => connection.deleteFromWhere("role", "id", role.id))
+        .then(() => console.log("Successfully deleted role."))
+        .then(() => editMenu())
         .catch(err => { if (err) throw err });
 }
 
@@ -568,7 +636,7 @@ function editEmployee(emp) {
             name: "editEmployee",
             type: "list",
             message: `\nName: ${emp.first_name} ${emp.last_name}\nRole: ${emp.role_name}\nDepartment: ${emp.department_name}`,
-            choices: addMenu(["Change First Name", "Change Last Name", "Change Role", "Change Manager"]),
+            choices: addMenu(["Change First Name", "Change Last Name", "Change Role", "Change Manager", "Delete Employee"]),
             default: 3
         })
         .then(({ editEmployee }) => {
@@ -577,12 +645,76 @@ function editEmployee(emp) {
                 case "Change Last Name": return editEmployeeLastName(emp);
                 case "Change Role": return editEmployeeRole(emp);
                 case "Change Manager": return editEmployeeManager(emp);
+                case "Delete Employee": return deleteEmployee(emp);
                 case "Main Menu": homeMenu(); break;
                 case "Back": return selectEmployees();
                 case "Exit": return exit();
                 default: return selectEmployees();
             }
         })
+        .catch(err => { if (err) throw err });
+}
+
+function deleteEmployee(emp) {
+    let isManager;
+    let managerIds = [];
+    let choices = [];
+    connection.getAll("employee")
+        .then(rows => {
+            choices = rows.filter(obj => obj.id !== emp.id);
+            managerIds = choices.map(obj => obj.manager_id);
+            isManager = managerIds.includes(emp.id);
+            choices = choices.map(obj => {
+                return {
+                    name: `${obj.first_name} ${obj.last_name}`,
+                    value: obj
+                };
+            });
+            return inquirer
+                .prompt([
+                    {
+                        name: "confirmDelete",
+                        type: "confirm",
+                        message: `Are you sure you want to delete ${emp.first_name} ${emp.last_name}?`
+                    },
+                    {
+                        name: "deleteMethod",
+                        type: "list",
+                        message: "What would you like to do with this manager's employees?",
+                        choices: addMenu([
+                            { name: "Leave employees without a manager", value: "clearManager" },
+                            "Move to new manager",
+                            "Remove All Employees"
+                        ]),
+                        default: 3,
+                        when: ({ confirmDelete }) => confirmDelete && isManager
+                    }
+                ]);
+        })
+        .then(({ confirmDelete, deleteMethod }) => {
+            if (!confirmDelete) {
+                return editEmployee(emp);
+            } else if (!isManager) {
+                return connection.deleteFromWhere("employee", "id", emp.id);
+            }
+            else switch (deleteMethod) {
+                case "Main Menu": return homeMenu();
+                case "Back": return editEmployee(emp);
+                case "Exit": return exit();
+                case "clearManager": return deleteEmployeeClearManager(emp);
+                case "Move to new manager": return deleteEmployeeMoveAll(emp);
+                case "Remove All Employees": return deleteEmployeeDeleteAll(emp);
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function deleteEmployeeClearManager(emp) {
+    connection.updateMore("employee", "manager_id", 0, emp.id)
+        .then(() => console.log("Successfully updated employee's managers."))
+        .then(() => connection.deleteFromWhere("employee", "id", emp.id))
+        .then(() => console.log("Successfully deleted employee."))
+        .then(() => selectEmployees())
         .catch(err => { if (err) throw err });
 }
 

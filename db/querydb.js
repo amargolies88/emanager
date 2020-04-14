@@ -113,9 +113,9 @@ class Database {
         });
     }
 
-    updateMore(table, col, newDeptID, oldDeptID, args) {
+    updateMore(table, col, newID, oldID, args) {
         return new Promise((resolve, reject) => {
-            let sql = `UPDATE ${table} SET ${col} = "${newDeptID}" WHERE ${col} = ${oldDeptID}`
+            let sql = `UPDATE ${table} SET ${col} = "${newID}" WHERE ${col} = ${oldID}`
             this.connection.query(sql, args, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
@@ -189,8 +189,7 @@ class Database {
         });
     }
 
-    deleteAllByDept(deptID, args) {
-        let sql = `DELETE FROM employee WHERE `
+    deleteAllByDept(deptID) {
         let roleIds = [];
         let uniqueRoleIds = [];
         return new Promise((resolve, reject) => {
@@ -216,14 +215,29 @@ class Database {
             this.connection.query(sql, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
-            })
-        })
+            });
+        });
     }
 
     deleteDeptRemove(dept) {
         return new Promise((resolve, reject) => {
 
         })
+    }
+
+    empIsManager(emp) {
+        let isManager = false;
+        return new Promise((resolve, reject) => {
+            this.getCol("manager_id", "employee")
+                .then(rows => {
+                    rows.forEach(row => {
+                        if (row.manager_id === emp.id) isManager = true;
+                    });
+                })
+                .then(() => resolve(isManager))
+                .catch(err => reject(err));
+        });
+
     }
 
 
