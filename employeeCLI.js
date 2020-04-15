@@ -16,9 +16,15 @@ const connection = new Database({
     user: "root",
     password: "root",
     database: "employeeDB"
-})
+});
 
-// *** Interface Starts Here ***
+const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2
+});
+
+// *** CLI STARTS HERE ***
 homeMenu("Welcome to eManager. Choose an option to get started.");
 
 function homeMenu(message = "Main Menu. Choose an option...") {
@@ -27,7 +33,7 @@ function homeMenu(message = "Main Menu. Choose an option...") {
             name: "homeAnswer",
             type: "list",
             message: message,
-            choices: ["Create", "Edit", "Exit"]
+            choices: ["Create", "View", "Edit", "Exit"]
         })
         .then(({ homeAnswer }) => {
             switch (homeAnswer) {
@@ -204,6 +210,117 @@ function askEmployee() {
             console.log("Successfully added employee.");
             return homeMenu();
         })
+        .catch(err => { if (err) throw err });
+}
+
+function viewMenu() {
+    inquirer
+        .prompt({
+            name: "viewAnswer",
+            type: "list",
+            message: "Select option to view...",
+            choices: addMenu(["View Departments", "View Roles", "View Employees", "View Employees By Manager"]),
+            default: 3
+        })
+        .then(({ viewAnswer }) => {
+            switch (viewAnswer) {
+                case "Exit": return exit();
+                case "Main Menu": return homeMenu();
+                case "Back": return homeMenu();
+                case "View Departments": return viewDepartments();
+                case "View Roles": return viewRoles();
+                case "View Employees": return viewEmployees();
+                case "View Employees By Manager": return viewEmployeesByManager();
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function viewDepartments() {
+    let depts = [];
+    let salaries = [];
+    connection.getAll("department")
+        .then(rows => depts = rows.map(obj => {
+            return {
+                id: obj.id,
+                name: obj.name,
+                ub: 0
+            };
+        }))
+        .then(() => connection.getEmployeeBudgetView())
+        .then(emps => {
+            salaries = emps;
+
+            for (let i = 0; i < salaries.length; i++) {
+                const emp = salaries[i];
+                for (let j = 0; j < depts.length; j++) {
+                    const dept = depts[j];
+                    if (emp.department_id === dept.id) {
+                        dept.ub += emp.salary;
+                    }
+                }
+            }
+            depts = depts.map(obj => {
+                return {
+                    ID: obj.id,
+                    Name: obj.name,
+                    "Utilized Budget": obj.ub
+                };
+            });
+            console.table(depts);
+            return;
+        })
+        .then(() => viewMenu())
+        .catch(err => { if (err) throw err });
+}
+
+function viewRoles() {
+    connection.getAll("role")
+        .then(rows => console.table(rows))
+        .then(() => viewMenu())
+        .catch(err => { if (err) throw err });
+}
+
+function viewEmployees() {
+    connection.getEmployeeView()
+        .then(view => console.table(view))
+        .then(() => viewMenu())
+        .catch(err => { if (err) throw err });
+}
+
+function viewEmployeesByManager() {
+    let managerIds = [];
+    let choices = [];
+    connection.getAll("employee")
+        .then(emps => {
+            managerIds = emps.map(obj => obj.manager_id);
+            managerIds = [...new Set(managerIds)];
+            choices = emps.filter(emp => managerIds.includes(emp.id));
+            choices = choicesMapEmployee(choices);
+            return inquirer
+                .prompt({
+                    name: "viewManagerEmployees",
+                    type: "list",
+                    message: "Select manager...",
+                    choices: addMenu(choices),
+                    default: 3
+                })
+        })
+        .then(({ viewManagerEmployees }) => {
+            switch (viewManagerEmployees) {
+                case "Exit": return exit();
+                case "Main Menu": return homeMenu();
+                case "Back": return viewMenu();
+                default: return displayEmployeesByManager(viewManagerEmployees);
+            }
+        })
+        .catch(err => { if (err) throw err });
+}
+
+function displayEmployeesByManager(manager) {
+    connection.getEmployeeForManager(manager.id)
+        .then(emps => console.table(emps))
+        .then(() => viewEmployeesByManager())
         .catch(err => { if (err) throw err });
 }
 
@@ -561,7 +678,6 @@ function editRoleSalary(role) {
 function editRoleDepartment(role) {
     let updatedRole = role;
     let choices = [];
-    console.log(role);
     connection.getAll("department")
         .then(depts => {
             choices = depts.map(dept => {
@@ -877,13 +993,6 @@ function editEmployeeManager(emp) {
             }
         })
         .catch(err => { if (err) throw err });
-}
-
-function viewMenu() {
-    inquirer
-        .prompt({
-            name: ""
-        })
 }
 
 function exit() {

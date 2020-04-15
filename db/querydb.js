@@ -81,6 +81,71 @@ class Database {
         });
     }
 
+    getEmployeeView() {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT 
+                employee.id, CONCAT(employee.first_name,' ', employee.last_name) AS Name,
+                role.name AS Role,
+                department.name AS Department, role.salary AS Salary,
+                CONCAT(fresh.first_name, ' ', fresh.last_name) AS Manager
+                FROM employee
+                INNER JOIN role 
+                ON employee.role_id = role.id
+                INNER JOIN department 
+                ON role.department_id = department.id
+                LEFT OUTER JOIN employee fresh
+                ON employee.manager_id = fresh.id
+                ORDER BY employee.id ASC;`
+            this.connection.query(sql, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    getEmployeeForManager(managerID) {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT 
+                employee.id, CONCAT(employee.first_name,' ', employee.last_name) AS Name,
+                role.name AS Role,
+                department.name AS Department, role.salary AS Salary,
+                CONCAT(fresh.first_name, ' ', fresh.last_name) AS Manager
+                FROM employee
+                INNER JOIN role 
+                ON employee.role_id = role.id
+                INNER JOIN department 
+                ON role.department_id = department.id
+                LEFT OUTER JOIN employee fresh
+                ON employee.manager_id = fresh.id
+                WHERE employee.manager_id = ${managerID}
+                ORDER BY employee.id ASC;`
+            this.connection.query(sql, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    getEmployeeBudgetView() {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT 
+                employee.id, department.name, role.department_id, role.salary
+                FROM employee
+                INNER JOIN role 
+                ON employee.role_id = role.id
+                INNER JOIN department 
+                ON role.department_id = department.id
+                ORDER BY department.id;`
+            this.connection.query(sql, (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
     getColWhere(col, table, statement, args) {
         return new Promise((resolve, reject) => {
             let sql = `SELECT ${col} FROM ${table} WHERE ${statement};`;
