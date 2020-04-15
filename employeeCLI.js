@@ -695,7 +695,8 @@ function deleteEmployee(emp) {
             if (!confirmDelete) {
                 return editEmployee(emp);
             } else if (!isManager) {
-                return connection.deleteFromWhere("employee", "id", emp.id);
+                connection.deleteFromWhere("employee", "id", emp.id)
+                    .then(() => selectEmployees());
             }
             else switch (deleteMethod) {
                 case "Main Menu": return homeMenu();
@@ -714,6 +715,52 @@ function deleteEmployeeClearManager(emp) {
         .then(() => console.log("Successfully updated employee's managers."))
         .then(() => connection.deleteFromWhere("employee", "id", emp.id))
         .then(() => console.log("Successfully deleted employee."))
+        .then(() => selectEmployees())
+        .catch(err => { if (err) throw err });
+}
+
+function deleteEmployeeMoveAll(emp) {
+    let recMan;
+    let choices = [];
+    connection.getAll("employee")
+        .then((rows => {
+            choices = rows.filter(row => row.id !== emp.id);
+            choices = choicesMapEmployee(choices);
+            return inquirer
+                .prompt({
+                    name: "receivingManager",
+                    type: "list",
+                    message: "Select a new manager for employees...",
+                    choices: addMenu(choices),
+                    default: 3
+                })
+        }))
+        .then(({ receivingManager }) => {
+            switch (receivingManager) {
+                case "Main Menu": homeMenu(); break;
+                case "Back": return editEmployee(emp);
+                case "Exit": return exit();
+                default:
+                    recMan = receivingManager;
+                    return connection.updateMore("employee", "manager_id", receivingManager.id, emp.id)
+            }
+
+        })
+        .then(() => {
+            if (recMan.manager_id === emp.id) return connection.update("employee", "manager_id", 0, recMan.id);
+            else return;
+        })
+        .then(() => console.log("Successfully moved employees to new manager"))
+        .then(() => connection.deleteFromWhere("employee", "id", emp.id))
+        .then(() => console.log("Successfully deleted manager."))
+        .then(() => selectEmployees())
+        .catch(err => { if (err) throw err });
+}
+
+function deleteEmployeeDeleteAll(emp) {
+    connection.deleteFromWhere("employee", "manager_id", emp.id)
+        .then(() => connection.deleteFromWhere("employee", "id", emp.id))
+        .then(() => console.log("Successfully deleted employee and employees with this manager."))
         .then(() => selectEmployees())
         .catch(err => { if (err) throw err });
 }
@@ -851,4 +898,22 @@ function addMenu(array) {
     menu.unshift("Main Menu");
     menu.unshift("Exit");
     return menu;
+}
+
+function choicesMap(choices) {
+    return choices.map(obj => {
+        return {
+            name: obj.name,
+            value: obj
+        };
+    });
+}
+
+function choicesMapEmployee(choices) {
+    return choices.map(obj => {
+        return {
+            name: `${obj.first_name} ${obj.last_name}`,
+            value: obj
+        };
+    });
 }
