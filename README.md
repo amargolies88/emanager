@@ -59,6 +59,7 @@ You can edit any information in the database. Just select edit from the home men
 ### Deleting Items
 
 ![Demo](docs/demo/05-delete.gif)
+Some items are dependent upon each other. For example, employees can be assigned a manager. 
 
 #### Enter Name
 
