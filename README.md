@@ -21,6 +21,10 @@ Download this [repository](https://github.com/amargolies88/teamgen).
 
 You must have node.js to run this application. Download node.js [here](https://nodejs.org/en/)
 
+### Setup MySQL Database
+
+Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for setting up a MySQL database. Your database must be named as "employeeDB" with username and password as "root" for this application to work. If you would like to use a different database name, username, or password, you must edit [app.js](./app.js) around line 11. ![Edit app.js](docs\mysql_connection.PNG)
+
 ### Install the node packages
 
 - Open command prompt (windows) or terminal (mac).
