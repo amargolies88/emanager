@@ -23,7 +23,9 @@ You must have node.js to run this application. Download node.js [here](https://n
 
 ### Setup MySQL Database
 
-Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for setting up a MySQL database. Your database must be named as "employeeDB" with username and password as "root" for this application to work. If you would like to use a different database name, username, or password, you must edit [app.js](./app.js) around line 11. ![Edit app.js](docs\mysql_connection.PNG)
+Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for setting up a MySQL database. Your database must be named as "employeeDB" with username and password as "root" for this application to work. If you would like to use a different database name, username, or password, you must edit [app.js](./app.js) around line 11.
+
+![Edit app.js](docs\mysql_connection.PNG)
 
 ### Install the node packages
 
@@ -59,47 +61,19 @@ You can edit any information in the database. Just select edit from the home men
 ### Deleting Items
 
 ![Demo](docs/demo/05-delete.gif)
-Some items are dependent upon each other. For example, employees can be assigned a manager. 
-
-#### Enter Name
-
-![Demno](docs/shots/07.png)
-Enter the name of the team member you will be adding.
-
-#### Enter ID
-
-![Demno](docs/shots/08.png)
-Enter the ID number you would like to assign to this team member. The application will only allow positive integers less than 9007199254740992
-
-#### Enter Email
-
-![Demno](docs/shots/09.png)
-Enter this member's email address.
-
-#### Enter Unique Information
-
-![Demno](docs/shots/10.png)
-Each role has one unique property.
-
-- Manager: enter manager's office number
-- Engineer: enter engineer's github username
-- Intern: enter name of intern's school
-
-#### Add another team member?
-
-![Demno](docs/shots/11.png)
-Your previous team member was successfully added. Now you can choose to add another team member (y) or finish adding team members (n).
-
-### Generate team.html
-
-![Demno](docs/shots/12.png)
-Once you have finished adding team members answer no (n) when asked if you would like to add another team member. Once you have answered no an html file will be generated and placed in the output folder. Open this file to view your new team.
+Some items are dependent upon others. For example, employees can be assigned a manager. When deleting items that have dependents the application will allow you options to deal with the dependents. To delete an item first access the edit menu from the main menu. Then select the item you want to delete by selecting the category it belongs to and then the item. The application will ask you to confirm this action. If the item has no dependents the item will be deleted, otherwise the item will be deleted after you have decided through the following prmopt how to manage the dependents.
 
 ## Credits
 
 [NodeJS](https://nodejs.org/en/)
 
-[Inquirer](https://www.npmjs.com/package/inquirer)
+[MySQL](https://www.mysql.com/)
+
+[mysql Node Package](https://www.npmjs.com/package/mysql)
+
+[Inquirer Node Package](https://www.npmjs.com/package/inquirer)
+
+[console.table Node Package](https://www.npmjs.com/package/mysql)
 
 [GitHub](https://github.com/)
 
