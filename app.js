@@ -297,7 +297,7 @@ function viewDepartments() {
 }
 
 function viewRoles() {
-    connection.getAll("role")
+    connection.getRoleView()
         .then(rows => console.table(rows))
         .then(() => viewMenu())
         .catch(err => { if (err) throw err });

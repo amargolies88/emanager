@@ -96,7 +96,7 @@ class Database {
                 ON role.department_id = department.id
                 LEFT OUTER JOIN employee fresh
                 ON employee.manager_id = fresh.id
-                ORDER BY employee.id ASC;`
+                ORDER BY employee.last_name, employee.first_name ASC;`
             this.connection.query(sql, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
@@ -146,13 +146,28 @@ class Database {
         });
     }
 
+    getRoleView() {
+        return new Promise((resolve, reject) => {
+            let sql =
+                `SELECT role.id, role.name, role.salary, department.name as department
+                FROM role
+                INNER JOIN department
+                ON role.department_id = department.id
+                ORDER BY department, name;`
+            this.connection.query(sql, (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    }
+
     getColWhere(col, table, statement, args) {
         return new Promise((resolve, reject) => {
             let sql = `SELECT ${col} FROM ${table} WHERE ${statement};`;
             this.connection.query(sql, args, (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
-            })
+            });
         });
     }
 

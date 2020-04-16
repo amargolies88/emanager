@@ -36,7 +36,7 @@ Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for 
 
 ## Usage
 
-![Demno](docs/shots/demo.gif)
+![Demo](docs/demo/demo.gif)
 
 ### Run Using Node.js
 
