@@ -41,26 +41,31 @@ Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for 
 ### Run Using Node.js
 
 ![Demo](docs/demo/01-start-with-node.gif)
+
 Using command prompt or command-line terminal of your choice navigate to the application's root directory and run the command "node app.js"
 
 ### Create Departments, Roles, and Employees
 
 ![Demo](docs/demo/02-create.gif)
+
 The first option in the home menu allows you to create departments, roles, and employees. Just follow the prompts on the screen. Note: if your database is empty the application will not allow you to create an employee before a role. The application will also not allow you to create a role before a department.
 
 ### View
 
 ![Demo](docs/demo/03-view.gif)
+
 Select the view menu and you will be given choices for viewing departments roles or employees. The view is displayed in table format for easy reading.
 
 ### Edit
 
 ![Demo](docs/demo/04-edit.gif)
+
 You can edit any information in the database. Just select edit from the home menu and follow the prompts. You can change the names and values of all items.
 
 ### Deleting Items
 
 ![Demo](docs/demo/05-delete.gif)
+
 Some items are dependent upon others. For example, employees can be assigned a manager. When deleting items that have dependents the application will allow you options to deal with the dependents. To delete an item first access the edit menu from the main menu. Then select the item you want to delete by selecting the category it belongs to and then the item. The application will ask you to confirm this action. If the item has no dependents the item will be deleted, otherwise the item will be deleted after you have decided through the following prmopt how to manage the dependents.
 
 ## Credits
