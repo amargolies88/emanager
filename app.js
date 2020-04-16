@@ -86,7 +86,11 @@ function askDepartment() {
                     name: "answerDepartment",
                     type: "input",
                     message: "Enter department name...",
-                    validate: (answer) => (depts.includes(answer)) ? "Department name already exists. Choose a different name." : true
+                    validate: (answer) => {
+                        if (answer === "") return "Department name cannot be empty.";
+                        if (depts.includes(answer)) return "Department name already exists. Choose a different name.";
+                        return true;
+                    }
                 })
         })
         .then(({ answerDepartment }) => connection.insertDepartment(answerDepartment))
@@ -120,13 +124,21 @@ function askRole() {
                         name: "answerRoleName",
                         type: "input",
                         message: "Enter name of role...",
-                        validate: (answer) => (roleNames.includes(answer)) ? "Role name already exists." : true
+                        validate: (answer) => {
+                            if (roleNames.includes(answer)) return "Role name already exists.";
+                            if (answer === "") return "Role name cannot be empty.";
+                            return true;
+                        }
                     },
                     {
                         name: "answerRoleSalary",
                         type: "input",
                         message: "Enter salary for this role...",
-                        validate: (answer) => (answer.match(/^[0-9]*$/gm)) ? true : "Enter numbers only."
+                        validate: (answer) => {
+                            if (answer === "") return "Salary cannot be empty.";
+                            if (!answer.match(/^[0-9]*$/gm)) return "Enter numbers only.";
+                            return true;
+                        }
                     },
                     {
                         name: "answerRoleDepartment",
@@ -181,12 +193,22 @@ function askEmployee() {
                     {
                         name: "answerFirstName",
                         type: "input",
-                        message: "Enter employee's FIRST name..."
+                        message: "Enter employee's FIRST name...",
+                        validate: answer => {
+                            if (answer === "") return "Input cannot be empty.";
+                            if (!answer.match(/^[A-Z]+$/i)) return "Enter alphabet characters only.";
+                            return true;
+                        }
                     },
                     {
                         name: "answerLastName",
                         type: "input",
-                        message: "Enter employee's LAST name..."
+                        message: "Enter employee's LAST name...",
+                        validate: answer => {
+                            if (answer === "") return "Input cannot be empty.";
+                            if (!answer.match(/^[A-Z]+$/i)) return "Enter alphabet characters only.";
+                            return true;
+                        }
                     },
                     {
                         name: "answerRole",
@@ -418,7 +440,11 @@ function editDepartmentName(targetDept) {
                     name: "newDeptName",
                     type: "input",
                     message: "Enter new name...",
-                    validate: (answer) => (departments.map(dept => dept.name).includes(answer) && (answer !== targetDept.name)) ? "Department name already exists. Choose a different name." : true
+                    validate: (answer) => {
+                        if (answer === "") return "Input cannot be empty.";
+                        if (departments.map(dept => dept.name).includes(answer) && (answer !== targetDept.name)) return "Department name already exists. Choose a different name.";
+                        return true;
+                    }
                 })
         })
         .then(({ newDeptName }) => connection.update("department", "name", newDeptName, targetDept.id))
@@ -641,7 +667,11 @@ function editRoleName(role) {
                 name: "newRoleName",
                 type: "input",
                 message: "Enter new role name",
-                validate: (answer) => (roleValidateList.includes(answer) && (answer !== role.name)) ? "Role name already exists. Choose a different name." : true
+                validate: (answer) => {
+                    if (answer === "") return "Input cannot be empty.";
+                    if (roleValidateList.includes(answer) && (answer !== role.name)) return "Role name already exists. Choose a different name.";
+                    return true;
+                }
             });
         })
         .then(({ newRoleName }) => {
@@ -662,7 +692,11 @@ function editRoleSalary(role) {
             name: "roleSalary",
             type: "input",
             message: "Enter new salary for role",
-            validate: (answer) => (answer.match(/^[0-9]*$/gm)) ? true : "Enter numbers only."
+            validate: (answer) => {
+                if (answer === "") return "Input cannot be empty.";
+                if (!answer.match(/^[0-9]*$/gm)) return "Enter numbers only.";
+                return true;
+            }
         })
         .then(({ roleSalary }) => {
             updatedRole.salary = roleSalary;
@@ -887,7 +921,12 @@ function editEmployeeFirstName(emp) {
         .prompt({
             name: "empFirstName",
             type: "input",
-            message: "Enter employee FIRST name..."
+            message: "Enter employee FIRST name...",
+            validate: answer => {
+                if (answer === "") return "Input cannot be empty.";
+                if (!answer.match(/^[A-Z]+$/i)) return "Enter alphabet characters only.";
+                return true;
+            }
         })
         .then(({ empFirstName }) => {
             updatedEmployee.first_name = empFirstName;
@@ -905,7 +944,12 @@ function editEmployeeLastName(emp) {
         .prompt({
             name: "empLastName",
             type: "input",
-            message: "Enter employee LAST name..."
+            message: "Enter employee LAST name...",
+            validate: answer => {
+                if (answer === "") return "Input cannot be empty.";
+                if (!answer.match(/^[A-Z]+$/i)) return "Enter alphabet characters only.";
+                return true;
+            }
         })
         .then(({ empLastName }) => {
             updatedEmployee.last_name = empLastName;

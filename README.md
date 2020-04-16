@@ -38,20 +38,27 @@ Check out this [guide](https://dev.mysql.com/doc/mysql-getting-started/en/) for 
 
 ### Run Using Node.js
 
-![Demno](docs/shots/04.png)
+![Demo](docs/demo/01-start-with-node.gif)
 Using command prompt or command-line terminal of your choice navigate to the application's root directory and run the command "node app.js"
 
-### Adding team members
+### Create Departments, Roles, and Employees
 
-##### Would you like to add a team member?
+![Demo](docs\demo\02-create.gif)
+The first option in the home menu allows you to create departments, roles, and employees. Just follow the prompts on the screen. Note: if your database is empty the application will not allow you to create an employee before a role. The application will also not allow you to create a role before a department.
 
-![Demno](docs/shots/05.png)
-You will be asked if you would like to add a team member. Enter 'y' or leave blank for yes and 'n' for no.
+### View
 
-#### Select team member's role
+![Demo](docs/demo/03-view.gif)
+Select the view menu and you will be given choices for viewing departments roles or employees. The view is displayed in table format for easy reading.
 
-![Demno](docs/shots/06.png)
-Only the 'Manager' role is available as a choice when adding the first team member. Only the roles 'Engineer' and 'Intern' are available choices for every team member added after the manager. Use the arrow keys to choose between the role options and hit enter or return to select.
+### Edit
+
+![Demo](docs/demo/04-edit.gif)
+You can edit any information in the database. Just select edit from the home menu and follow the prompts. You can change the names and values of all items.
+
+### Deleting Items
+
+![Demo](docs/demo/05-delete.gif)
 
 #### Enter Name
 
