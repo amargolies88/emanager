@@ -45,7 +45,7 @@ Using command prompt or command-line terminal of your choice navigate to the app
 
 ### Create Departments, Roles, and Employees
 
-![Demo](docs\demo\02-create.gif)
+![Demo](docs/demo/02-create.gif)
 The first option in the home menu allows you to create departments, roles, and employees. Just follow the prompts on the screen. Note: if your database is empty the application will not allow you to create an employee before a role. The application will also not allow you to create a role before a department.
 
 ### View
