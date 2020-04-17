@@ -27,6 +27,7 @@ const formatter = new Intl.NumberFormat('en-US', {
 // *** CLI STARTS HERE ***
 homeMenu("Welcome to eManager. Choose an option to get started.");
 
+// function for main menu prompt
 function homeMenu(message = "Main Menu. Choose an option...") {
     inquirer
         .prompt({
@@ -46,6 +47,7 @@ function homeMenu(message = "Main Menu. Choose an option...") {
         .catch(err => { if (err) throw err });
 }
 
+//prompts what type of item to create
 function createMenu() {
     connection.tableHasData()
         .then(({ departments, roles, employees }) => {
@@ -77,6 +79,7 @@ function createMenu() {
         .catch(err => { if (err) throw err });
 }
 
+//prompt user to input name of department
 function askDepartment() {
     connection.getCol("name", "department")
         .then(depts => depts.map(obj => obj.name))
@@ -93,6 +96,7 @@ function askDepartment() {
                     }
                 })
         })
+        // add department to database using user's answer
         .then(({ answerDepartment }) => connection.insertDepartment(answerDepartment))
         .then(() => {
             console.log("Successfully added department!");
@@ -102,9 +106,11 @@ function askDepartment() {
 
 }
 
+// ask user for information on role they want to create
 function askRole() {
     let roleNames = [];
     let depList = [];
+    // get all departments from database to use in list question
     connection.getAll("department")
         .then(departments => {
             depList = departments.map(department => {
@@ -149,6 +155,7 @@ function askRole() {
                 ])
         })
         .then(answers => {
+            // formatting role object to be used in insertRole() function
             let role = {
                 name: answers.answerRoleName,
                 salary: answers.answerRoleSalary,
@@ -163,11 +170,15 @@ function askRole() {
         .catch(err => { if (err) throw err });
 }
 
+// ask user for information regarding employee they want to create
 function askEmployee() {
     let employees = [];
     let roles = [];
+    // get all employees to use in manager list question
     connection.getAll("employee")
         .then(res => {
+            // map employee list so that employee object shows in answer
+            // and first and last name show in list
             employees = res.map(employee => {
                 return {
                     name: `${employee.first_name} ${employee.last_name}`,
@@ -177,6 +188,7 @@ function askEmployee() {
             employees.unshift({ name: "No Manager", value: 0 })
             return;
         })
+        // get all roles to validate new role has a unique name
         .then(() => connection.getAll("role"))
         .then(res => {
             roles = res.map(role => {
@@ -224,7 +236,7 @@ function askEmployee() {
                     }
                 ])
         })
-        .then((answer) => {
+        .then((answer) => { // construct employee and insert into database
             const employee = new Employee(answer.answerFirstName, answer.answerLastName, answer.answerRole, answer.answerManager);
             return connection.insertEmployee(employee);
         })
@@ -235,6 +247,7 @@ function askEmployee() {
         .catch(err => { if (err) throw err });
 }
 
+// prompt categories to view
 function viewMenu() {
     inquirer
         .prompt({
@@ -258,10 +271,13 @@ function viewMenu() {
         .catch(err => { if (err) throw err });
 }
 
+// display information regarding departments
 function viewDepartments() {
     let depts = [];
     let salaries = [];
+    // get all departments from database
     connection.getAll("department")
+    // map departments to have a "ub" property which will be used to calculate 'utilized budget'
         .then(rows => depts = rows.map(obj => {
             return {
                 id: obj.id,
@@ -271,8 +287,8 @@ function viewDepartments() {
         }))
         .then(() => connection.getEmployeeBudgetView())
         .then(emps => {
+            // for each employee add their salary to their department's 'ub' property
             salaries = emps;
-
             for (let i = 0; i < salaries.length; i++) {
                 const emp = salaries[i];
                 for (let j = 0; j < depts.length; j++) {
@@ -282,6 +298,7 @@ function viewDepartments() {
                     }
                 }
             }
+            // map departments for better column title formatting
             depts = depts.map(obj => {
                 return {
                     ID: obj.id,
@@ -296,6 +313,7 @@ function viewDepartments() {
         .catch(err => { if (err) throw err });
 }
 
+// get and console.table roles, super simple!
 function viewRoles() {
     connection.getRoleView()
         .then(rows => console.table(rows))
@@ -303,6 +321,7 @@ function viewRoles() {
         .catch(err => { if (err) throw err });
 }
 
+// get and console.table employees
 function viewEmployees() {
     connection.getEmployeeView()
         .then(view => console.table(view))
@@ -310,14 +329,21 @@ function viewEmployees() {
         .catch(err => { if (err) throw err });
 }
 
+// prompt to select manager to view their employees
 function viewEmployeesByManager() {
     let managerIds = [];
     let choices = [];
+    // get list of employees
     connection.getAll("employee")
         .then(emps => {
+            // collect all manager ids so we can find out who is a manager
             managerIds = emps.map(obj => obj.manager_id);
+            // remove duplicate ids
             managerIds = [...new Set(managerIds)];
+            // set choices to have only employees whose ID is
+            // included in the unique manager id list
             choices = emps.filter(emp => managerIds.includes(emp.id));
+            // map choices to display names as choices with employee object as answer
             choices = choicesMapEmployee(choices);
             return inquirer
                 .prompt({
@@ -333,12 +359,14 @@ function viewEmployeesByManager() {
                 case "Exit": return exit();
                 case "Main Menu": return homeMenu();
                 case "Back": return viewMenu();
+                // send selected manager to function:
                 default: return displayEmployeesByManager(viewManagerEmployees);
             }
         })
         .catch(err => { if (err) throw err });
 }
 
+// get list of employees that have this manager and console.table them
 function displayEmployeesByManager(manager) {
     connection.getEmployeeForManager(manager.id)
         .then(emps => console.table(emps))
@@ -346,9 +374,11 @@ function displayEmployeesByManager(manager) {
         .catch(err => { if (err) throw err });
 }
 
+// prompt to select category to edit
 function editMenu() {
     connection.tableHasData()
         .then(({ departments, roles, employees }) => {
+            // only allow selecting categories that have something in them to edit
             let choices = [
                 { name: "Departments", disabled: (departments) ? false : "No departments to edit." },
                 { name: "Roles", disabled: (roles) ? false : "No roles to edit." },
@@ -377,6 +407,7 @@ function editMenu() {
         .catch(err => { if (err) throw err });
 }
 
+// select departments to edit
 function selectDepartments() {
     let choices = [];
     connection.getAll("department")
@@ -410,6 +441,7 @@ function selectDepartments() {
         .catch(err => { if (err) throw err });
 }
 
+// options for editing selected department
 function editDepartment(department) {
     inquirer
         .prompt({
